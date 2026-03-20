@@ -1,0 +1,36 @@
+# Node modules
+node_modules/
+**/node_modules/
+
+# Next.js / React
+.next/
+out/
+build/
+dist/
+
+# Logs
+logs
+*.log
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+
+# Mobile (React Native / Flutter common)
+android/.gradle/
+android/app/build/
+ios/Pods/
+ios/build/
+
+# Misc
+coverage/
+.tmp/
+.cache/
