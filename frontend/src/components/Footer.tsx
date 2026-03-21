@@ -2,65 +2,72 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="bg-text-light text-text-dark pt-24 pb-12 px-6 md:px-12 border-t border-white/10">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 border-b border-white/10 pb-16">
+    <footer className="bg-white text-gray-900 border-t border-gray-100 pt-24 pb-32 md:pb-16 px-6 md:px-12 mt-auto">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-16 md:gap-8">
         
-        <div className="col-span-1 md:col-span-1 flex flex-col gap-6">
-          <Link href="/" className="font-serif text-4xl font-bold tracking-[0.2em] text-white">
-            ONOFF
+        {/* Brand Information */}
+        <div className="w-full md:w-1/3 flex flex-col gap-6">
+          <Link href="/" className="flex flex-col group">
+            <span className="text-3xl font-black tracking-tighter text-black leading-none group-hover:text-[#f21c43] transition-colors uppercase">
+               SMART<span className="italic">ON</span>
+            </span>
+            <span className="text-[8px] font-black tracking-[0.4em] text-gray-400 uppercase -mt-0.5 ml-0.5 leading-none">
+               By ONOFF STORE
+            </span>
           </Link>
-          <p className="text-sm text-text-muted leading-relaxed">
-            Crafting minimal ethnic and modern fusion essentials for India. Uncompromising quality and design.
+          <p className="text-xs text-gray-500 leading-loose max-w-sm tracking-widest font-sans">
+            Minimalist luxury. Elevated streetwear. Engineered perfectly for the contemporary wardrobe.
           </p>
+          
+          <div className="flex gap-4 mt-2">
+            <a href="#" className="w-10 h-10 border border-gray-200 flex items-center justify-center rounded-full hover:bg-black hover:text-white transition-all text-sm font-serif">IG</a>
+            <a href="#" className="w-10 h-10 border border-gray-200 flex items-center justify-center rounded-full hover:bg-black hover:text-white transition-all text-sm font-serif">X</a>
+            <a href="#" className="w-10 h-10 border border-gray-200 flex items-center justify-center rounded-full hover:bg-black hover:text-white transition-all text-sm font-serif">TT</a>
+          </div>
         </div>
 
-        <div className="col-span-1 flex flex-col gap-4">
-          <h4 className="text-xs uppercase tracking-[0.2em] font-semibold text-white mb-2">Shop</h4>
-          <Link href="/shop/men" className="text-sm text-text-muted hover:text-white transition-colors">Men's Apparel</Link>
-          <Link href="/shop/women" className="text-sm text-text-muted hover:text-white transition-colors">Women's Apparel</Link>
-          <Link href="/shop/kids" className="text-sm text-text-muted hover:text-white transition-colors">Kids' Collection</Link>
-          <Link href="/shop/accessories" className="text-sm text-text-muted hover:text-white transition-colors">Accessories</Link>
-        </div>
+        {/* Links Array */}
+        <div className="w-full md:w-2/3 grid grid-cols-2 md:grid-cols-3 gap-10 md:gap-8">
+          
+          {/* Collection */}
+          <div className="flex flex-col gap-6">
+            <h4 className="text-[10px] font-bold tracking-[0.3em] text-gray-400 uppercase">Discover</h4>
+            <nav className="flex flex-col gap-3 text-xs tracking-wider text-gray-500 font-medium">
+              <Link href="/shop" className="hover:text-black transition-colors">Autumn / Winter '24</Link>
+              <Link href="/shop" className="hover:text-black transition-colors">Best Sellers</Link>
+              <Link href="/shop" className="hover:text-black transition-colors">Essential Denim</Link>
+              <Link href="/shop" className="hover:text-black transition-colors">Tonal Knitwear</Link>
+            </nav>
+          </div>
 
-        <div className="col-span-1 flex flex-col gap-4">
-          <h4 className="text-xs uppercase tracking-[0.2em] font-semibold text-white mb-2">Help</h4>
-          <Link href="/faq" className="text-sm text-text-muted hover:text-white transition-colors">FAQ & Shipping</Link>
-          <Link href="/returns" className="text-sm text-text-muted hover:text-white transition-colors">Returns & Exchanges</Link>
-          <Link href="/contact" className="text-sm text-text-muted hover:text-white transition-colors">Contact Us</Link>
-          <Link href="/size-guide" className="text-sm text-text-muted hover:text-white transition-colors">Size Guide</Link>
-        </div>
+          {/* Customer Care */}
+          <div className="flex flex-col gap-6">
+            <h4 className="text-[10px] font-bold tracking-[0.3em] text-gray-400 uppercase">Client Services</h4>
+            <nav className="flex flex-col gap-3 text-xs tracking-wider text-gray-500 font-medium">
+              <Link href="/track" className="hover:text-black underline underline-offset-4 transition-colors text-black">Track Order</Link>
+              <Link href="/" className="hover:text-black transition-colors">Client Support</Link>
+              <Link href="/" className="hover:text-black transition-colors">Returns & Exchanges</Link>
+              <Link href="/" className="hover:text-black transition-colors">Size Assistance</Link>
+            </nav>
+          </div>
 
-        <div className="col-span-1 flex flex-col gap-4">
-          <h4 className="text-xs uppercase tracking-[0.2em] font-semibold text-white mb-2">Newsletter</h4>
-          <p className="text-sm text-text-muted leading-relaxed">
-            Sign up for 10% off your first order, updates, and more.
-          </p>
-          <form className="mt-2 flex border-b border-text-muted focus-within:border-white transition-colors pb-2 group">
-            <input 
-              type="email" 
-              placeholder="Email address" 
-              className="bg-transparent border-none outline-none text-sm text-white w-full placeholder-text-muted"
-            />
-            <button type="submit" className="text-xs tracking-widest uppercase font-semibold text-white/50 group-hover:text-white transition-colors">
-              Join
-            </button>
-          </form>
+          {/* Legal / Social */}
+          <div className="flex flex-col gap-6 col-span-2 md:col-span-1">
+            <h4 className="text-[10px] font-bold tracking-[0.3em] text-gray-400 uppercase">Company</h4>
+            <nav className="flex flex-col gap-3 text-xs tracking-wider text-gray-500 font-medium">
+              <Link href="/about" className="hover:text-black transition-colors">Our Philosophy</Link>
+              <Link href="/stores" className="hover:text-black transition-colors">Boutique Locations</Link>
+              <Link href="/terms" className="hover:text-black transition-colors">Terms & Privacy</Link>
+            </nav>
+          </div>
         </div>
-
       </div>
 
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mt-8 gap-4">
-        <p className="text-xs text-text-muted uppercase tracking-widest font-semibold">
-          &copy; {new Date().getFullYear()} ONOFF INDIA. ALL RIGHTS RESERVED.
-        </p>
-        <div className="flex gap-6">
-          {/* Social Icons Placeholders */}
-          <a href="#" className="text-text-muted hover:text-white transition-colors">
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-          </a>
-          <a href="#" className="text-text-muted hover:text-white transition-colors">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-          </a>
+      {/* Copyright */}
+      <div className="max-w-7xl mx-auto mt-24 pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+        <p className="text-[10px] font-bold tracking-[0.2em] text-gray-400 uppercase">© {new Date().getFullYear()} SMARTON BY ONOFF. All Rights Reserved.</p>
+        <div className="flex gap-4 items-center">
+            <span className="text-[9px] uppercase tracking-widest text-gray-400">Currency: INR ₹</span>
         </div>
       </div>
     </footer>
