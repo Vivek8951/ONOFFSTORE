@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -11,54 +10,89 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (phoneNumber.length !== 10) return alert('Enter a valid 10-digit number');
+    
     setIsLoading(true);
-    // Simulate OTP Send
-    setTimeout(() => {
-      setStep('otp');
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNumber })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setStep('otp');
+        alert(`[DEMO] OTP Sent! Testing mode: Use ${data.mockOTP}`);
+      }
+    } catch (err) {
+      alert('Authentication server is offline.');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate Verification
-    setTimeout(() => {
-      localStorage.setItem('onoff_user_token', 'demo_token_123');
-      router.push('/');
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNumber, code: otp })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem('onoff_user_token', data.token);
+        localStorage.setItem('onoff_user_profile', JSON.stringify(data.user));
+        // REDIRECT TO SHOP AFTER LOGIN
+        router.push('/shop');
+      } else {
+        alert(data.message || 'Access Denied');
+      }
+    } catch (err) {
+      alert('Error connecting to authentication gate.');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6 pt-40">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-12 flex flex-col items-center">
-          <img 
-            src="/logo.png" 
-            alt="SMARTON BY ONOFF" 
-            className="h-32 md:h-48 w-auto object-contain hover:grayscale transition-all duration-700" 
-          />
-          <p className="text-[12px] font-black uppercase tracking-[0.8em] text-gray-200 mt-6 leading-none">PREMIUM FASHION HUB</p>
+    <div className="min-h-screen bg-black flex items-center justify-center p-6 relative overflow-hidden font-sans">
+      {/* Editorial Background */}
+      <div className="absolute inset-0 opacity-40">
+        <img 
+          src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1200&auto=format&fit=crop" 
+          className="w-full h-full object-cover"
+          alt="Campaign"
+        />
+        <div className="absolute inset-0 bg-gradient-to-tr from-black via-black/40 to-transparent"></div>
+      </div>
+
+      <div className="w-full max-w-lg z-10 animate-fade-in-up">
+        <div className="text-center mb-12">
+          <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter text-white mb-2 uppercase">SMART<span className="text-[#f21c43]">ON</span></h1>
+          <p className="text-[10px] font-black uppercase tracking-[1.5em] text-gray-500">Member Entrance</p>
         </div>
 
-        <div className="bg-white border-2 border-black p-8 md:p-12 shadow-[15px_15px_0px_0px_rgba(0,0,0,0.05)] rounded-2xl">
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-10 md:p-16 rounded-[40px] shadow-2xl">
           {step === 'phone' ? (
-            <form onSubmit={handleSendOtp} className="flex flex-col gap-6 animate-fade-in-up">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Mobile Number</label>
-                <div className="flex gap-4">
-                  <span className="flex items-center justify-center bg-gray-50 border-2 border-black px-4 font-bold rounded-xl">+91</span>
+            <form onSubmit={handleSendOtp} className="flex flex-col gap-8">
+              <div className="space-y-4">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[#f21c43] text-center block w-full">Identification</label>
+                <div className="relative">
                   <input 
                     type="tel" 
-                    placeholder="99999 99999" 
+                    placeholder="PHONE NUMBER" 
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="flex-1 border-2 border-black p-4 font-black text-xl rounded-xl outline-none focus:bg-gray-50 transition-colors"
+                    className="w-full bg-transparent border-b-2 border-white/20 p-6 font-black text-3xl text-center text-white outline-none focus:border-[#f21c43] transition-colors placeholder:text-white/10"
                     required 
                     maxLength={10}
+                    autoFocus
                   />
                 </div>
               </div>
@@ -66,73 +100,56 @@ export default function LoginPage() {
               <button 
                 type="submit" 
                 disabled={isLoading}
-                className="bg-black text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-lg hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50"
+                className="bg-white text-black py-6 rounded-full font-black uppercase tracking-[0.3em] text-lg hover:bg-[#f21c43] hover:text-white active:scale-95 transition-all shadow-2xl disabled:opacity-50"
               >
-                {isLoading ? 'Sending...' : 'Get OTP Code'}
+                {isLoading ? 'Requesting...' : 'Request Access'}
               </button>
-              
-              <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-wider">
-                By continuing, you agree to ONOFF's Terms of Service and Privacy Policy.
-              </p>
             </form>
           ) : (
-            <form onSubmit={handleVerifyOtp} className="flex flex-col gap-6 animate-fade-in-up">
-              <div className="space-y-2 text-center">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Enter 6-Digit Code</label>
-                <div className="flex justify-between gap-2 mt-4">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <input 
-                      key={i}
-                      type="text" 
-                      maxLength={1}
-                      className="w-12 h-16 border-2 border-black text-center font-black text-2xl rounded-xl outline-none focus:bg-gray-50"
-                      onChange={(e) => {
-                         if (e.target.value && i < 6) {
-                            // Simple auto-focus shift logic would go here in real app
-                         }
-                         setOtp(prev => prev + e.target.value);
-                      }}
-                    />
-                  ))}
-                </div>
+            <form onSubmit={handleVerifyOtp} className="flex flex-col gap-8">
+              <div className="space-y-4 text-center">
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Verify Authenticity</label>
+                <input 
+                  type="text" 
+                  maxLength={6}
+                  placeholder="∙ ∙ ∙ ∙ ∙ ∙"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="w-full bg-transparent border-b-2 border-white/20 p-6 font-black text-4xl text-center text-white outline-none focus:border-[#f21c43] tracking-[0.5em] placeholder:text-white/10 uppercase"
+                  required
+                  autoFocus
+                />
               </div>
               
               <button 
                 type="submit" 
-                disabled={isLoading}
-                className="bg-[#f21c43] text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-lg hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50"
+                disabled={isLoading || otp.length < 6}
+                className="bg-[#f21c43] text-white py-6 rounded-full font-black uppercase tracking-[0.3em] text-lg hover:bg-white hover:text-black active:scale-95 transition-all shadow-2xl disabled:opacity-50"
               >
-                {isLoading ? 'Verifying...' : 'Login Now'}
+                {isLoading ? 'Verifying...' : 'Validate Member'}
               </button>
 
               <button 
                 type="button" 
-                onClick={() => setStep('phone')}
-                className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
+                onClick={() => { setStep('phone'); setOtp(''); }}
+                className="text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
               >
-                Change Phone Number
+                Correction Required? Back
               </button>
             </form>
           )}
         </div>
-
-        <div className="mt-12 flex flex-col items-center gap-6">
-           <div className="flex items-center gap-4 w-full text-gray-300">
-              <div className="h-[1px] bg-gray-200 flex-1"></div>
-              <span className="text-[10px] font-black uppercase tracking-widest">Or Continue With</span>
-              <div className="h-[1px] bg-gray-200 flex-1"></div>
-           </div>
-           
-           <div className="flex gap-4">
-              <button className="border-2 border-gray-100 p-4 rounded-full hover:border-black transition-all hover:scale-110">
-                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
-              </button>
-              <button className="border-2 border-gray-100 p-4 rounded-full hover:border-black transition-all hover:scale-110">
-                 <img src="https://www.svgrepo.com/show/448234/facebook.svg" className="w-6 h-6" alt="FB" />
-              </button>
-           </div>
-        </div>
       </div>
+
+      <style jsx global>{`
+        .animate-fade-in-up {
+          animation: fadeInUp 0.8s ease-out both;
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

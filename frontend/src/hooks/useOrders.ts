@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 
 export interface Order {
   id: string;
+  _id?: string; // MongoDB real ID
   user: string;
   total: string;
   status: 'Pending' | 'Accepted' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
@@ -12,6 +13,12 @@ export interface Order {
   trackingId?: string;
   courier?: string;
   address?: string;
+  customerDetails?: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  };
 }
 
 const INITIAL_ORDERS: Order[] = [

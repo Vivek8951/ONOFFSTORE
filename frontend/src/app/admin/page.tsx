@@ -158,6 +158,27 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSendInvoice = async (orderId: string, overrideEmail: string) => {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch('http://localhost:5000/api/orders/resend-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, overrideEmail })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNotifications([`Premium PDF Bill sent to ${overrideEmail}`, ...notifications]);
+      } else {
+        alert(data.error || 'Failed to send bill');
+      }
+    } catch (err) {
+      alert('Backend connection failed. Is the server running?');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center font-sans p-6 pt-32">
@@ -555,26 +576,33 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="p-5">
-                       <div className="flex gap-2 justify-center">
-                          <button 
-                            onClick={() => setEditingOrder(order)}
-                            className="bg-black text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-[#f21c43] transition-colors rounded"
-                          >
-                            Process
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setIsRefreshing(true);
-                              setTimeout(() => {
-                                setIsRefreshing(false);
-                                setNotifications([`Invoice Sent to ${order.user}'s Email Successfully!`, ...notifications]);
-                              }, 800);
-                            }}
-                            className="bg-white border border-gray-200 text-gray-500 px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:border-black hover:text-black transition-all rounded flex items-center gap-1"
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2-2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                            Email Bill
-                          </button>
+                       <div className="flex flex-col gap-2 items-center">
+                          <div className="flex gap-2">
+                             <button 
+                               onClick={() => setEditingOrder(order)}
+                               className="bg-black text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-[#f21c43] transition-colors rounded"
+                             >
+                               Process
+                             </button>
+                             <button 
+                               onClick={() => {
+                                 const input = document.getElementById(`email-${order.id}`) as HTMLInputElement;
+                                 handleSendInvoice(order._id || order.id, input?.value || order.customerDetails?.email || '');
+                               }}
+                               disabled={isRefreshing}
+                               className={`bg-black text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-[#f21c43] transition-all rounded flex items-center gap-1 ${isRefreshing ? 'opacity-50' : ''}`}
+                             >
+                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2-2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                               {isRefreshing ? 'Sending...' : 'Send Bill'}
+                             </button>
+                          </div>
+                          <input 
+                            id={`email-${order.id}`}
+                            type="email" 
+                            placeholder="Destination Email"
+                            defaultValue={order.customerDetails?.email || ''}
+                            className="text-[9px] border border-gray-100 p-1 w-full rounded focus:border-black outline-none text-center font-medium"
+                          />
                        </div>
                     </td>
                   </tr>

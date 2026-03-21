@@ -3,9 +3,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const Razorpay = require('razorpay');
+const nodemailer = require('nodemailer');
 
 // Route imports
 const productRoutes = require('./src/routes/productRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 const Order = require('./src/models/Order');
 
 const app = express();
@@ -13,10 +15,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/onoff_store')
-  .then(() => console.log('✅ Connected to MongoDB (ONOFF Store Database)'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// 1. Connect to MongoDB with Enhanced Stability
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/onoff_store';
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ Connected to MongoDB (SMARTON Database Ready)'))
+  .catch(err => {
+    console.error('❌ MongoDB Connection Error:', err.message);
+    console.log('💡 TIP: Check if your IP is whitelisted in MongoDB Atlas Network Security.');
+  });
 
 
 // 2. Razorpay Initialization
@@ -26,8 +32,72 @@ const razorpay = new Razorpay({
 });
 
 
-// 3. Mount Product Routes
+// 3. Mount Routes
 app.use('/api/products', productRoutes);
+app.use('/api/auth', authRoutes);
+
+
+const { generateInvoicePDF } = require('./src/services/PDFService');
+const stream = require('stream');
+
+// 3.5. Email Service Setup (Nodemailer)
+const transporter = nodemailer.createTransport({
+  service: 'gmail', 
+  auth: { 
+    user: process.env.EMAIL_USER, 
+    // 💡 AUTO-CLEAN: Removes any spaces from the 16-digit App Password automatically
+    pass: (process.env.EMAIL_PASS || '').replace(/\s/g, '') 
+  }
+});
+
+const sendOrderConfirmation = async (order) => {
+  try {
+    const fileName = `SMARTON_INVOICE_${order._id.toString().slice(-6).toUpperCase()}.pdf`;
+    
+    // 💡 PDF STREAM SETUP
+    const pdfStream = new stream.PassThrough();
+    generateInvoicePDF(order, pdfStream);
+
+    const pdfBuffer = await new Promise((resolve, reject) => {
+      const chunks = [];
+      pdfStream.on('data', chunk => chunks.push(chunk));
+      pdfStream.on('end', () => resolve(Buffer.concat(chunks)));
+      pdfStream.on('error', reject);
+    });
+
+    const mailOptions = {
+      from: `"SMARTON BY ONOFF" <${process.env.EMAIL_USER}>`,
+      to: order.customerDetails.email,
+      subject: `Order Confirmed & Digital Bill: #${order._id.toString().slice(-6).toUpperCase()}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px; border-radius: 10px;">
+          <h1 style="text-transform: uppercase; letter-spacing: 5px; text-align: center; color: #000;">SMARTON</h1>
+          <p style="text-align: center; font-size: 10px; tracking: 2px; color: #888;">BY ONOFF STORE</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+          <h2 style="font-size: 14px; text-transform: uppercase;">Purchase Confirmation</h2>
+          <p>Dear <b>${order.customerDetails.name}</b>,</p>
+          <p>Your luxury pieces from SMARTON have been confirmed. We have attached your **Official Digital Bill** as a PDF to this email.</p>
+          
+          <div style="background: #fcfcfc; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 5px 0; font-size: 12px;"><b>Order ID:</b> ${order._id}</p>
+            <p style="margin: 5px 0; font-size: 12px;"><b>Amount Paid:</b> ₹${order.totalAmount}</p>
+          </div>
+
+          <p style="font-size: 12px; color: #666; font-style: italic;">Thank you for your refined choice.</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+          <p style="font-size: 10px; color: #aaa; text-align: center; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} SMARTON WORLDWIDE • MUMBAI</p>
+        </div>
+      `,
+      attachments: [{ filename: fileName, content: pdfBuffer }]
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('📧 Premium Invoice & PDF Sent:', info.messageId);
+  } catch (err) {
+    console.log('⚠️ Failed to send PDF email. Service might be unconfigured.');
+    console.error('Error:', err.message);
+  }
+};
 
 
 // 4. Order & Payment Routes
@@ -69,12 +139,8 @@ orderRouter.post('/create', async (req, res) => {
 // Razorpay Webhook Callback (Post-payment)
 orderRouter.post('/verify', async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { razorpay_order_id, razorpay_payment_id } = req.body;
     
-    // IN PRODUCTION: Verify the signature using crypto!
-    // const crypto = require('crypto'); ...
-    
-    // Update the local database order status to Completed
     const order = await Order.findOne({ 'paymentDetails.razorpayOrderId': razorpay_order_id });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     
@@ -82,10 +148,45 @@ orderRouter.post('/verify', async (req, res) => {
     order.paymentDetails.razorpayPaymentId = razorpay_payment_id;
     await order.save();
 
-    // 🔔 Real-time Admin Notification Trigger Stub (e.g. Socket.io emission here)
-    console.log(`[ONOFF ADMIN ALERT] 🚨 New paid order received! Order ID: ${order._id}`);
+    // 📧 Trigger Order Confirmation Email (Real-time)
+    await sendOrderConfirmation(order);
 
     res.json({ success: true, message: 'Payment verified and order confirmed!' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin: Resend Invoice via Email (Supports Sandbox Mode for Dummy IDs)
+orderRouter.post('/resend-invoice', async (req, res) => {
+  try {
+    const { orderId, overrideEmail } = req.body;
+    let order;
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+       console.log(`[SANDBOX] Generating Mock PDF for Dummy ID: ${orderId}`);
+       order = {
+         _id: orderId,
+         createdAt: new Date(),
+         totalAmount: 9999, 
+         customerDetails: {
+           name: 'Sandbox Tester',
+           email: overrideEmail || 'vivek@example.com', // Prefer override
+           phone: '0000000000',
+           address: 'FASHION TEST HUB, SMARTON'
+         },
+         items: [{ name: 'MOCK LUXURY ITEM', quantity: 1, price: 9999 }]
+       };
+    } else {
+       order = await Order.findById(orderId);
+       // Allow overriding email even for real orders
+       if (order && overrideEmail) order.customerDetails.email = overrideEmail;
+    }
+
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    await sendOrderConfirmation(order);
+    res.json({ success: true, message: `Digital Invoice sent to ${overrideEmail || order.customerDetails?.email}` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

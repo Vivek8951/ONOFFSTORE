@@ -13,6 +13,8 @@ export default function Checkout() {
   const [placedOrderId, setPlacedOrderId] = useState('');
   const [showInvoice, setShowInvoice] = useState(false);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('John Doe');
   
   const { addOrder } = useOrders();
 
@@ -24,13 +26,19 @@ export default function Checkout() {
     const newOrderId = `ONOFF-${Math.floor(Math.random() * 9000) + 1000}`;
     const newOrder: Order = {
       id: newOrderId,
-      user: 'John Doe', // Captured from form
+      user: name,
       total: '₹16,998',
       status: 'Pending',
       item: 'Oversized Parachute Pants + Essential Utility Jacket',
       size: 'M / L',
       date: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
-      address: '123 Fashion Street, Mumbai, 400001'
+      address: '123 Fashion Street, Mumbai, 400001',
+      customerDetails: {
+        name: name,
+        email: email,
+        phone: '9999999999',
+        address: '123 Fashion Street, Mumbai, 400001'
+      }
     };
 
     // Simulate Razorpay/Dummy Payment Gateway delay
@@ -83,11 +91,10 @@ export default function Checkout() {
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-100 mb-8">
                 <h2 className="text-lg font-bold uppercase mb-4 border-b pb-2">1. Shipping Address</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input type="text" placeholder="First Name" className="border p-3 rounded bg-gray-50 focus:outline-none focus:border-black" defaultValue="John" />
-                  <input type="text" placeholder="Last Name" className="border p-3 rounded bg-gray-50 focus:outline-none focus:border-black" defaultValue="Doe" />
-                  <input type="text" placeholder="Address" className="border p-3 rounded bg-gray-50 focus:outline-none focus:border-black md:col-span-2" defaultValue="123 Fashion Street" />
-                  <input type="text" placeholder="City" className="border p-3 rounded bg-gray-50 focus:outline-none focus:border-black" defaultValue="Mumbai" />
-                  <input type="text" placeholder="Pincode" className="border p-3 rounded bg-gray-50 focus:outline-none focus:border-black" defaultValue="400001" />
+                  <input type="text" placeholder="Full Name" className="border p-4 rounded bg-gray-50 focus:outline-none focus:border-black font-medium" value={name} onChange={(e) => setName(e.target.value)} required />
+                  <input type="email" placeholder="Email Address (For Bill & Tracking)" className="border p-4 rounded bg-gray-50 focus:outline-none focus:border-black font-medium" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <input type="text" placeholder="Shipping Address" className="border p-4 rounded bg-gray-50 focus:outline-none focus:border-black md:col-span-2 font-medium" defaultValue="123 Fashion Street, Mumbai, 400001" required />
+                  <input type="text" placeholder="Phone Number" className="border p-4 rounded bg-gray-50 focus:outline-none focus:border-black font-medium" defaultValue="91+ 8234-5678" required />
                 </div>
               </div>
 
