@@ -27,8 +27,9 @@ export default function LoginPage() {
         setStep('otp');
         alert(`[DEMO] OTP Sent! Testing mode: Use ${data.mockOTP}`);
       }
-    } catch (err) {
-      alert('Authentication server is offline.');
+    } catch (err: any) {
+      const targetUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      alert(`Authentication server is offline.\n\nTarget URL: ${targetUrl}\n\nReason: ${err.message}`);
     } finally {
       setIsLoading(false);
     }

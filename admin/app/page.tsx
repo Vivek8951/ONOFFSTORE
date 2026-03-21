@@ -28,9 +28,11 @@ export default function FullySyncedAdmin() {
   const [isReady, setIsReady] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
   const fetchArchive = async () => {
     try {
-      const oRes = await fetch('http://localhost:5000/api/orders/admin/all');
+      const oRes = await fetch(`${API_URL}/api/orders/admin/all`);
       const oData = await oRes.json();
       setOrders(oData.map((o: any) => ({
         id: `#${o._id.slice(-6).toUpperCase()}`,
@@ -44,7 +46,7 @@ export default function FullySyncedAdmin() {
         customerDetails: o.customerDetails
       })));
 
-      const pRes = await fetch('http://localhost:5000/api/products');
+      const pRes = await fetch(`${API_URL}/api/products`);
       const pData = await pRes.json();
       setInventory(pData.map((p: any) => ({
         id: p._id,
@@ -104,7 +106,7 @@ export default function FullySyncedAdmin() {
 
   const handleUpdateStock = async (id: string, amount: number) => {
     try {
-      await fetch(`http://localhost:5000/api/products/${id}/stock`, {
+      await fetch(`${API_URL}/api/products/${id}/stock`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ stockToAdd: amount })
@@ -125,7 +127,7 @@ export default function FullySyncedAdmin() {
     e.preventDefault();
     // ORIGINAL logic but calling API
     try {
-       const res = await fetch('http://localhost:5000/api/products', {
+       const res = await fetch(`${API_URL}/api/products`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...newProduct, price: parseInt(newProduct.price), stock: parseInt(newProduct.stock), slug: newProduct.name.toLowerCase().replace(/ /g, '-'), category: 'Fusion' })
@@ -142,7 +144,7 @@ export default function FullySyncedAdmin() {
   const handleSendInvoice = async (orderId: string, overrideEmail: string) => {
     setIsRefreshing(true);
     try {
-      await fetch('http://localhost:5000/api/orders/resend-invoice', {
+      await fetch(`${API_URL}/api/orders/resend-invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId, overrideEmail })
@@ -260,7 +262,7 @@ export default function FullySyncedAdmin() {
                           <h3 className="font-black text-xl uppercase italic leading-tight">{item.name}</h3>
                           <p className="text-gray-400 font-bold">₹{item.price}</p>
                           <div className="flex gap-1 mt-3">
-                             {item.sizes?.map(sz => <span key={sz} className="text-[8px] font-black bg-gray-50 border px-1.5 py-0.5 rounded text-gray-300 uppercase">{sz}</span>)}
+                             {item.sizes?.map((sz: string) => <span key={sz} className="text-[8px] font-black bg-gray-50 border px-1.5 py-0.5 rounded text-gray-300 uppercase">{sz}</span>)}
                           </div>
                        </div>
                     </div>
@@ -332,7 +334,7 @@ export default function FullySyncedAdmin() {
                               const res = orders.map(o => o.id === editingOrder.id ? { ...o, status: st as any } : o);
                               setOrders(res);
                               // We will add real DB call here but keeping original FE logic working
-                              fetch(`http://localhost:5000/api/orders/${editingOrder._id}/status`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({status:st}) });
+                              fetch(`${API_URL}/api/orders/${editingOrder._id}/status`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({status:st}) });
                               setEditingOrder(null);
                             }} className={`py-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${editingOrder.status === st ? 'bg-black text-white' : 'bg-gray-50 text-gray-400 hover:text-black'}`}>{st}</button>
                          ))}
