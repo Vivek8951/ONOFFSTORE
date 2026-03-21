@@ -30,7 +30,7 @@ export default function Hero() {
   if (activeBanners.length === 0) return null;
 
   return (
-    <div className="w-full flex flex-col items-center pt-32 md:pt-40 bg-white">
+    <div className="w-full flex flex-col items-center pt-24 md:pt-40 bg-white">
       {/* Mega Sale Banner Slider */}
       <section className="w-full max-w-[1440px] px-2 md:px-6 relative overflow-hidden group">
         <div 
@@ -50,12 +50,12 @@ export default function Hero() {
                 <span className="bg-[#f21c43] text-white px-4 py-1.5 font-black md:text-xl rounded shadow-lg uppercase mb-4 tracking-[0.2em] animate-pulse">
                    Exclusive Drop
                 </span>
-                <h1 className="text-4xl md:text-8xl font-black italic tracking-tighter leading-none mb-4 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] uppercase max-w-4xl">
+                <h1 className="text-2xl md:text-8xl font-black italic tracking-tighter leading-none mb-4 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] uppercase max-w-4xl px-4">
                   {banner.title}
                 </h1>
                 
-                <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                  <Link href="/shop" className="bg-white text-black px-10 py-4 font-black uppercase text-sm tracking-[0.2em] hover:bg-[#f21c43] hover:text-white transition-all shadow-2xl">
+                <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mt-4 w-full sm:w-auto px-6">
+                  <Link href="/shop" className="bg-white text-black px-6 md:px-10 py-3.5 md:py-4 font-black uppercase text-[10px] md:text-sm tracking-[0.2em] hover:bg-[#f21c43] hover:text-white transition-all shadow-2xl text-center">
                     Explore All
                   </Link>
                   {banner.linkProductId && (
@@ -83,36 +83,22 @@ export default function Hero() {
         )}
       </section>
 
-      {/* Bubble Categories Navigation (Extremely SHEIN: visual bubbles for fast shopping) */}
-      <section className="w-full max-w-[1440px] px-2 md:px-6 mt-6 md:mt-10 mb-8">
-        <div className="flex gap-4 md:gap-8 overflow-x-auto pb-4 scrollbar-hide px-2">
+      {/* High-End Category Navigation */}
+      <section className="w-full max-w-[1440px] px-4 md:px-6 mt-10 md:mt-16 mb-12">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400 text-center mb-8">Curated Collections</h2>
+        <div className="flex gap-6 md:gap-12 overflow-x-auto pb-4 scrollbar-hide px-2">
           {categories.map((cat, idx) => (
-            <div key={idx} className="flex flex-col items-center gap-2 cursor-pointer group flex-shrink-0">
-              <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-gray-100 overflow-hidden border-2 border-transparent group-hover:border-black p-0.5 transition-colors">
-                <div className="w-full h-full rounded-full overflow-hidden">
-                  <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+            <div key={idx} className="flex flex-col items-center gap-4 cursor-pointer group flex-shrink-0">
+              <div className="w-24 h-24 md:w-36 md:h-36 rounded-full bg-gray-50 overflow-hidden border border-gray-100 group-hover:border-black p-1 transition-all duration-500 shadow-sm">
+                <div className="w-full h-full rounded-full overflow-hidden grayscale hover:grayscale-0 transition-all duration-700">
+                  <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                 </div>
               </div>
-              <span className="text-sm font-bold uppercase tracking-tight text-gray-800">{cat.name}</span>
+              <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-800">{cat.name}</span>
             </div>
           ))}
-          
-          {/* View All bubble */}
-          <div className="flex flex-col items-center gap-2 cursor-pointer group flex-shrink-0">
-            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-gray-100 flex items-center justify-center border-2 border-transparent group-hover:border-black transition-colors">
-               <span className="font-black text-xl text-gray-400 group-hover:text-black">→</span>
-            </div>
-            <span className="text-sm font-bold uppercase tracking-tight text-gray-800">More</span>
-          </div>
         </div>
       </section>
-      
-      {/* Small Promo Strip under categories */}
-      <div className="w-full max-w-[1440px] px-4 md:px-6 mb-6">
-        <div className="w-full bg-[#fdf5e6] border border-[#ffb347] py-3 text-center rounded text-[#d6850b] text-sm font-bold uppercase shadow-sm">
-          🔥 TRENDING NOW: Over 10,000+ new styles added today! 🔥
-        </div>
-      </div>
     </div>
   );
 }

@@ -10,6 +10,7 @@ export default function AdminDashboard() {
   const { banners, setBanners, isReady: bannersReady } = useBanners();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ADMIN AUTH STATE
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -192,9 +193,32 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col md:flex-row font-sans">
       
-      {/* Sidebar - SMARTON Redesign */}
-      <aside className="w-full md:w-72 bg-black border-r border-gray-900 p-8 flex flex-col gap-2 text-white shrink-0">
-        <div className="mb-12">
+      {/* Mobile Top Bar */}
+      <div className="md:hidden bg-black text-white p-4 flex justify-between items-center sticky top-0 z-[110] border-b border-gray-900">
+        <div className="flex flex-col">
+          <h2 className="text-xl font-black tracking-tighter uppercase leading-none">SMART<span className="italic">ON</span></h2>
+          <span className="text-[6px] font-black uppercase tracking-widest text-gray-500">Admin Control</span>
+        </div>
+        <button 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="p-2 border border-gray-800 rounded-lg hover:bg-gray-900 transition-colors"
+        >
+          {mobileMenuOpen ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          )}
+        </button>
+      </div>
+
+      {/* Sidebar - SMARTON Redesign (Mobile Drawer Responsive) */}
+      <aside className={`
+        fixed md:sticky top-14 md:top-0 left-0 bottom-0 z-[100] md:z-0
+        w-full md:w-72 bg-black border-r border-gray-900 p-8 flex flex-col gap-2 text-white shrink-0
+        transition-transform duration-300 ease-in-out
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="mb-12 hidden md:block">
           <img 
             src="/logo.png" 
             alt="SMARTON" 
@@ -212,7 +236,7 @@ export default function AdminDashboard() {
           ].map(tab => (
             <button 
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)} 
+              onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false); }} 
               className={`flex items-center gap-4 text-[11px] font-black uppercase tracking-widest p-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[#f21c43] text-white shadow-[0_0_20px_rgba(242,28,67,0.3)]' : 'hover:bg-white/10 text-gray-400 hover:text-white'}`}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d={tab.icon}></path></svg>
@@ -228,9 +252,9 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 md:p-12 overflow-y-auto">
+      <main className="flex-1 p-6 md:p-12 overflow-y-auto">
         {/* Quick Stats Banner */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 animate-fade-in-up">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12 animate-fade-in-up">
            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-1">
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Revenue</span>
               <p className="text-3xl font-black tracking-tighter">₹24,82,900</p>
