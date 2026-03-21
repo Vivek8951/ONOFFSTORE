@@ -64,45 +64,47 @@ export function useInventory() {
   const [inventory, setInventoryState] = useState<Product[]>([]);
   const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
-    // 1. Initial Load from LocalStorage
-    const saved = localStorage.getItem('onoff_inventory_v1');
-    if (saved) {
-      setInventoryState(JSON.parse(saved));
-    } else {
-      setInventoryState(INITIAL_INVENTORY);
-      localStorage.setItem('onoff_inventory_v1', JSON.stringify(INITIAL_INVENTORY));
-    }
-    setIsReady(true);
-
-    // 2. Listen to changes across multiple tabs/pages (realtime sync)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'onoff_inventory_v1' && e.newValue) {
-        setInventoryState(JSON.parse(e.newValue));
+  const fetchInventory = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/products`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setInventoryState(data.map((p: any) => ({
+          ...p,
+          id: p._id || p.id, // Support MongoDB ID
+          price: p.price.toString()
+        })));
+        setIsReady(true);
       }
-    };
-    
-    // Custom internal event to sync across same window
-    const handleLocalSync = () => {
-       const fresh = localStorage.getItem('onoff_inventory_v1');
-       if (fresh) setInventoryState(JSON.parse(fresh));
-    };
+    } catch (err) {
+      console.error('Inventory Node Offline');
+      // Fallback to local storage if server is down
+      const saved = localStorage.getItem('onoff_inventory_v1');
+      if (saved) setInventoryState(JSON.parse(saved));
+      setIsReady(true);
+    }
+  };
 
-    window.addEventListener('storage', handleStorageChange);
+  useEffect(() => {
+    fetchInventory();
+    
+    // Listen for manual triggers from other components
+    const handleLocalSync = () => fetchInventory();
     window.addEventListener('onoff-inventory-update', handleLocalSync);
+    
+    const interval = setInterval(fetchInventory, 10000); // Poll for changes
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('onoff-inventory-update', handleLocalSync);
+      clearInterval(interval);
     };
   }, []);
 
   const setInventory = (newInventory: Product[]) => {
     setInventoryState(newInventory);
     localStorage.setItem('onoff_inventory_v1', JSON.stringify(newInventory));
-    // Dispatch event so other components on same page re-render instantly without refresh
     window.dispatchEvent(new Event('onoff-inventory-update'));
   };
 
-  return { inventory, setInventory, isReady };
+  return { inventory, setInventory, isReady, refresh: fetchInventory };
 }

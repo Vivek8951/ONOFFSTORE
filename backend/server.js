@@ -193,6 +193,31 @@ orderRouter.post('/resend-invoice', async (req, res) => {
 });
 
 // Admin: Get all orders
+// Admin: Update Status & Logistics
+orderRouter.put('/:id/status', async (req, res) => {
+  try {
+    const { status, courier, trackingId } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Signal Lost: Order Not Found' });
+
+    if (status) order.orderStatus = status;
+    if (courier) {
+      if (!order.shippingDetails) order.shippingDetails = {};
+      order.shippingDetails.courier = courier;
+    }
+    if (trackingId) {
+      if (!order.shippingDetails) order.shippingDetails = {};
+      order.shippingDetails.trackingId = trackingId;
+    }
+
+    await order.save();
+    res.json({ success: true, message: `Order Protocol Updated: ${status}` });
+  } catch (error) {
+    res.status(500).json({ error: 'Backend Transmission Failed' });
+  }
+});
+
+// Admin: Get all orders
 orderRouter.get('/admin/all', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
@@ -204,7 +229,7 @@ orderRouter.get('/admin/all', async (req, res) => {
 
 app.use('/api/orders', orderRouter);
 
-
 // 5. Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 ONOFF Backend Server running on port ${PORT}`));
+

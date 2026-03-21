@@ -50,52 +50,54 @@ export function useOrders() {
   const [orders, setOrdersState] = useState<Order[]>([]);
   const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
-    // 1. Initial Load from LocalStorage
-    const saved = localStorage.getItem('onoff_orders_v1');
-    if (saved) {
-      setOrdersState(JSON.parse(saved));
-    } else {
-      setOrdersState(INITIAL_ORDERS);
-      localStorage.setItem('onoff_orders_v1', JSON.stringify(INITIAL_ORDERS));
-    }
-    setIsReady(true);
-
-    // 2. Listen to changes across multiple tabs/pages (realtime sync)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'onoff_orders_v1' && e.newValue) {
-        setOrdersState(JSON.parse(e.newValue));
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/orders/admin/all`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setOrdersState(data.map((o: any) => ({
+          ...o,
+          id: o._id || o.id, // Support MongoDB ID
+          user: o.customerDetails?.name || 'Unknown Member',
+          total: `₹${o.totalAmount || 0}`,
+          status: o.paymentDetails?.status || 'Pending',
+          item: o.items?.[0]?.name || 'N/A',
+          size: o.items?.[0]?.size || 'N/A',
+          date: new Date(o.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+        })));
+        setIsReady(true);
       }
-    };
-    
-    // Custom internal event to sync across same window
-    const handleLocalSync = () => {
-       const fresh = localStorage.getItem('onoff_orders_v1');
-       if (fresh) setOrdersState(JSON.parse(fresh));
-    };
+    } catch (err) {
+      console.error('Order Node Offline');
+      const saved = localStorage.getItem('onoff_orders_v1');
+      if (saved) setOrdersState(JSON.parse(saved));
+      setIsReady(true);
+    }
+  };
 
-    window.addEventListener('storage', handleStorageChange);
+  useEffect(() => {
+    fetchOrders();
+    const handleLocalSync = () => fetchOrders();
     window.addEventListener('onoff-orders-update', handleLocalSync);
+    
+    const interval = setInterval(fetchOrders, 10000); // Poll for changes
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('onoff-orders-update', handleLocalSync);
+      clearInterval(interval);
     };
   }, []);
 
   const setOrders = (newOrders: Order[]) => {
     setOrdersState(newOrders);
     localStorage.setItem('onoff_orders_v1', JSON.stringify(newOrders));
-    // Dispatch event so other components on same page re-render instantly without refresh
     window.dispatchEvent(new Event('onoff-orders-update'));
   };
 
   const addOrder = (order: Order) => {
-    const current = localStorage.getItem('onoff_orders_v1');
-    const orders = current ? JSON.parse(current) : [];
-    const updated = [order, ...orders];
-    setOrders(updated);
+    setOrdersState(prev => [order, ...prev]);
+    window.dispatchEvent(new Event('onoff-orders-update'));
   };
 
-  return { orders, setOrders, addOrder, isReady };
+  return { orders, setOrders, addOrder, isReady, refresh: fetchOrders };
 }
