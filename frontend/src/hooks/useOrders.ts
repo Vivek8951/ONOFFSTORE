@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '@/config/api';
 
 export interface Order {
   id: string;
@@ -52,7 +53,7 @@ export function useOrders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/orders/admin/all`);
+      const res = await fetch(`${getApiUrl()}/api/orders/admin/all`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setOrdersState(data.map((o: any) => ({
