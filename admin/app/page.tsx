@@ -28,7 +28,17 @@ export default function FullySyncedAdmin() {
   const [isReady, setIsReady] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const getApiUrl = () => {
+    if (typeof window !== 'undefined') {
+       const host = window.location.hostname;
+       if (host !== 'localhost' && host !== '127.0.0.1') {
+          return 'https://8741bb21fd4a2f.lhr.life';
+       }
+    }
+    return 'http://localhost:5000';
+  };
+
+  const API_URL = getApiUrl();
 
   const fetchArchive = async () => {
     try {

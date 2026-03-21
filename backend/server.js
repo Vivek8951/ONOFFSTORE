@@ -231,5 +231,6 @@ app.use('/api/orders', orderRouter);
 
 // 5. Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 ONOFF Backend Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 ONOFF Backend Server running on port ${PORT} (Global Hub Open)`));
+
 
