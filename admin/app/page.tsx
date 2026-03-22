@@ -180,15 +180,28 @@ export default function AdminDashboard() {
   const handleSendInvoice = async (orderId: string, overrideEmail: string) => {
     setIsRefreshing(true);
     try {
+      const payload = {
+        orderId: (orderId || '').toString().trim().replace(/^#/, ''),
+        overrideEmail: (overrideEmail || '').trim()
+      };
       const res = await fetch(`${API_URL}/api/orders/resend-invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, overrideEmail })
+        body: JSON.stringify(payload)
       });
+
+      const json = await res.json();
       if (res.ok) {
-        setNotifications([`Premium Bill sent to ${overrideEmail}`, ...notifications]);
-      } else { alert('Mail Server Offline'); }
-    } catch (err) { alert('Protocol Failure'); } finally { setIsRefreshing(false); }
+        setNotifications([`Premium Bill sent to ${json.message || payload.overrideEmail}`, ...notifications]);
+        alert(`Invoice sent: ${json.message || 'Success'}`);
+      } else {
+        alert(`Email error: ${json.error || 'SMTP/Server issue'}`);
+      }
+    } catch (err: any) {
+      alert(`Protocol Failure: ${err?.message || err}`);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleUpdateOrderStatus = async (id: string, update: any) => {
@@ -585,7 +598,8 @@ export default function AdminDashboard() {
                             <button 
                               onClick={() => {
                                 const input = document.getElementById(`email-${order.id}`) as HTMLInputElement;
-                                handleSendInvoice(order._id || order.id, input?.value || order.customerDetails?.email || '');
+                                const targetId = (order._id || order.id || '').toString().trim().replace(/^#/, '');
+                                handleSendInvoice(targetId, input?.value || order.customerDetails?.email || '');
                               }}
                               disabled={isRefreshing}
                               className={`bg-black text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-[#f21c43] transition-all rounded flex items-center gap-1 ${isRefreshing ? 'opacity-50' : ''}`}

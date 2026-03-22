@@ -181,11 +181,12 @@ orderRouter.post('/resend-invoice', async (req, res) => {
   try {
     const { orderId, overrideEmail } = req.body;
     let order;
+    const sanitizedOrderId = (orderId || '').toString().trim().replace(/^#/, '');
 
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
-       console.log(`[SANDBOX] Generating Mock PDF for Dummy ID: ${orderId}`);
+    if (!mongoose.Types.ObjectId.isValid(sanitizedOrderId)) {
+       console.log(`[SANDBOX] Generating Mock PDF for Dummy ID: ${sanitizedOrderId}`);
        order = {
-         _id: orderId,
+         _id: sanitizedOrderId || 'sandbox-'+Date.now(),
          createdAt: new Date(),
          totalAmount: 9999, 
          customerDetails: {
