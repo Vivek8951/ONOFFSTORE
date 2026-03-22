@@ -264,14 +264,39 @@ export default function AdminDashboard() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center p-6">
-        <div className="bg-white p-12 w-full max-w-md border border-gray-100 shadow-2xl text-center">
-           <h1 className="text-4xl font-black uppercase tracking-widest mb-2">SMARTON</h1>
-           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-8 border-b pb-4">Secure Portal Access</p>
-           <form onSubmit={handleLogin} className="flex flex-col gap-6">
-              <input type="password" placeholder="Pass: admin123" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} className="w-full border-b-2 border-gray-100 py-4 text-center text-lg outline-none focus:border-black" required />
-              <button type="submit" className="w-full bg-black text-white font-black uppercase tracking-[0.2em] py-5 mt-2 hover:bg-[#f21c43] transition-all">Enter Dashboard</button>
-           </form>
+      <div className="min-h-screen bg-gradient-to-br from-[#0d0f24] via-[#1f254f] to-[#0b152f] flex items-center justify-center p-6">
+        <div className="w-full max-w-md bg-white/10 ring-1 ring-white/20 backdrop-blur-xl rounded-3xl p-10 shadow-2xl text-center border border-white/10">
+          <div className="mb-8">
+            <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-white/15 border border-white/25 text-2xl font-black text-white">🔐</div>
+            <h1 className="text-4xl font-black uppercase tracking-widest text-white mt-5">SMARTON</h1>
+            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-300">ADMIN SECURE SIGN-IN</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+            <label className="text-left text-xs tracking-wider font-semibold text-slate-300">Access Key</label>
+            <input
+              type="password"
+              placeholder="Enter admin access code"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              className="w-full rounded-xl bg-white/20 border border-white/20 px-4 py-3 text-sm font-semibold text-white placeholder:text-slate-300 outline-none transition focus:border-[#f21c43] focus:ring-2 focus:ring-[#f21c43]/30"
+              required
+            />
+
+            <div className="flex items-center justify-between text-xs text-slate-300">
+              <span>Hint: admin123</span>
+              <span className="text-[#f21c43] uppercase font-black tracking-widest">Private</span>
+            </div>
+
+            <button
+              type="submit"
+              className="mt-3 w-full rounded-xl border border-transparent bg-gradient-to-r from-[#f21c43] to-[#e83a6f] px-5 py-3 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-[#f21c4315] transition hover:shadow-[#f21c4325] hover:brightness-110"
+            >
+              Enter Dashboard
+            </button>
+          </form>
+
+          <p className="mt-8 text-[11px] text-slate-300">Admin operations are audited. Use only authorized credentials.</p>
         </div>
       </div>
     );
