@@ -59,8 +59,20 @@ export default function AdminDashboard() {
   // --- 🛰️ ARCHIVE FETCH LOGIC ---
   const fetchArchive = async () => {
     try {
-      const oRes = await fetch(`${API_URL}/api/orders/admin/all`);
-      const oData = await oRes.json();
+      console.log('fetchArchive -> API URL:', API_URL);
+
+      const fetchJson = async (url: string) => {
+        const res = await fetch(url);
+        const text = await res.text();
+        if (!res.ok) {
+          console.error(`fetchArchive fetch failed (${url})`, res.status, res.statusText, text);
+          throw new Error(`API error ${res.status} on ${url}`);
+        }
+        try { return JSON.parse(text); }
+        catch (e) { throw new Error(`Invalid JSON from ${url}: ${e.message} - ${text}`); }
+      };
+
+      const oData = await fetchJson(`${API_URL}/api/orders/admin/all`);
       setOrders(oData.map((o: any) => ({
         id: `#${o._id.slice(-6).toUpperCase()}`,
         _id: o._id,
@@ -75,8 +87,7 @@ export default function AdminDashboard() {
         trackingId: o.shippingDetails?.trackingId || ''
       })));
 
-      const pRes = await fetch(`${API_URL}/api/products`);
-      const pData = await pRes.json();
+      const pData = await fetchJson(`${API_URL}/api/products`);
       setInventory(pData.map((p: any) => ({
         id: p._id,
         name: p.name,
@@ -88,8 +99,7 @@ export default function AdminDashboard() {
         description: p.description
       })));
 
-      const bRes = await fetch(`${API_URL}/api/banners/admin/all`);
-      const bData = await bRes.json();
+      const bData = await fetchJson(`${API_URL}/api/banners/admin/all`);
       setBanners(bData.map((b: any) => ({
         id: b._id,
         title: b.title,
@@ -97,8 +107,12 @@ export default function AdminDashboard() {
         active: b.active,
         linkProductId: b.linkProductId
       })));
+    } catch (err: any) {
+      console.error('Sync Failure:', err.message || err);
+      setNotifications(prev => [`Sync Failure: ${err.message || err}`, ...prev]);
+    } finally {
       setIsReady(true);
-    } catch (err) { console.error("Sync Failure"); }
+    }
   };
 
   useEffect(() => {
