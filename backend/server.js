@@ -18,7 +18,18 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+
+// Increase body size limits for base64 images and invoice payloads
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
+
+// Friendly payload error handler
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Payload too large. Please upload smaller files or send image URLs.' });
+  }
+  next(err);
+});
 
 // 1. Connect to MongoDB with Enhanced Stability
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/onoff_store';
