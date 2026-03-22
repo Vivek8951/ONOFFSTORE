@@ -69,7 +69,7 @@ export default function AdminDashboard() {
           throw new Error(`API error ${res.status} on ${url}`);
         }
         try { return JSON.parse(text); }
-        catch (e) { throw new Error(`Invalid JSON from ${url}: ${e.message} - ${text}`); }
+        catch (e) { throw new Error(`Invalid JSON from ${url}: ${e instanceof Error ? e.message : String(e)} - ${text}`); }
       };
 
       const oData = await fetchJson(`${API_URL}/api/orders/admin/all`);
