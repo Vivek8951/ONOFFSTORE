@@ -16,8 +16,12 @@ export default function Navbar() {
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-black">Shop</span>
             <div className="h-[2px] w-0 bg-[#f21c43] group-hover:w-full transition-all duration-300"></div>
           </Link>
+          <Link href="/my-orders" className="group relative flex flex-col items-center">
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 group-hover:text-black transition-colors">My Orders</span>
+            <div className="h-[2px] w-0 bg-black group-hover:w-full transition-all duration-300"></div>
+          </Link>
           <Link href="/track" className="group relative flex flex-col items-center hidden md:flex">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 group-hover:text-black transition-colors">Archive</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 group-hover:text-black transition-colors">Track</span>
             <div className="h-[2px] w-0 bg-black group-hover:w-full transition-all duration-300"></div>
           </Link>
         </div>

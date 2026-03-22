@@ -23,11 +23,27 @@ export default function App() {
     }
   };
 
+  const [banners, setBanners] = useState([]);
+  const API_URL = 'http://localhost:5000'; // Mobile fallback for local testing
+
+  React.useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/banners`);
+        const data = await res.json();
+        setBanners(data);
+      } catch (err) { console.log('Banner Sync Offline'); }
+    };
+    fetchBanners();
+    const interval = setInterval(fetchBanners, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   if (!isAuthenticated) {
     return (
       <View style={styles.landingContainer}>
         <Image 
-          source={{ uri: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800' }} 
+          source={{ uri: banners[0]?.image || 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800' }} 
           style={styles.landingBg} 
         />
         <View style={styles.landingOverlay}>
@@ -87,7 +103,21 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {/* Product Banner */}
+      {/* Dynamic Banners */}
+      {banners.length > 0 && (
+        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.bannerScroll}>
+          {banners.map((banner, index) => (
+            <View key={index} style={styles.bannerSlide}>
+              <Image source={{ uri: banner.image }} style={styles.bannerImage} />
+              <View style={styles.bannerOverlay}>
+                <Text style={styles.bannerTitle}>{banner.title}</Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Product List */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>PRIVATE DROPS</Text>
         
@@ -147,5 +177,10 @@ const styles = StyleSheet.create({
   cardInfo: { paddingTop: 15 },
   cardTitle: { fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase' },
   cardPrice: { fontSize: 16, fontWeight: '900', color: '#f21c43', marginTop: 5, marginBottom: 15 },
-  button: { backgroundColor: '#000', padding: 15, alignItems: 'center' }
+  button: { backgroundColor: '#000', padding: 15, alignItems: 'center' },
+  bannerScroll: { height: 500 },
+  bannerSlide: { width: width, height: 500, position: 'relative' },
+  bannerImage: { width: '100%', height: '100%' },
+  bannerOverlay: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  bannerTitle: { color: '#fff', fontSize: 32, fontStyle: 'italic', fontWeight: '900', textAlign: 'center', textTransform: 'uppercase', letterSpacing: -1 }
 });

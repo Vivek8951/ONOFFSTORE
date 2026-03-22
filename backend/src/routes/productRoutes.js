@@ -23,7 +23,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Admin: Update Stock
+// Admin: Update Stock (Legacy Quick Action)
 router.put('/:id/stock', async (req, res) => {
   try {
     const { stockToAdd } = req.body;
@@ -33,6 +33,17 @@ router.put('/:id/stock', async (req, res) => {
     product.stock += stockToAdd;
     await product.save();
     res.json({ success: true, product });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Admin: Full Product Update (New)
+router.put('/:id', async (req, res) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedProduct) return res.status(404).json({ error: 'Product not found' });
+    res.json(updatedProduct);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
