@@ -184,20 +184,27 @@ export default function AdminDashboard() {
         orderId: (orderId || '').toString().trim().replace(/^#/, ''),
         overrideEmail: (overrideEmail || '').trim()
       };
+      console.log('Sending invoice request:', { url: `${API_URL}/api/orders/resend-invoice`, payload });
+
       const res = await fetch(`${API_URL}/api/orders/resend-invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
+      console.log('Response status:', res.status, res.statusText);
+
       const json = await res.json();
+      console.log('Response data:', json);
+
       if (res.ok) {
         setNotifications([`Premium Bill sent to ${json.message || payload.overrideEmail}`, ...notifications]);
         alert(`Invoice sent: ${json.message || 'Success'}`);
       } else {
-        alert(`Email error: ${json.error || 'SMTP/Server issue'}`);
+        alert(`Email error (${res.status}): ${json.error || 'SMTP/Server issue'}`);
       }
     } catch (err: any) {
+      console.error('Invoice send error:', err);
       alert(`Protocol Failure: ${err?.message || err}`);
     } finally {
       setIsRefreshing(false);

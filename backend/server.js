@@ -13,7 +13,12 @@ const Order = require('./src/models/Order');
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // 1. Connect to MongoDB with Enhanced Stability
@@ -178,10 +183,13 @@ orderRouter.post('/verify', async (req, res) => {
 
 // Admin: Resend Invoice via Email (Supports Sandbox Mode for Dummy IDs)
 orderRouter.post('/resend-invoice', async (req, res) => {
+  console.log('📧 Resend invoice request received:', req.body);
   try {
     const { orderId, overrideEmail } = req.body;
     let order;
     const sanitizedOrderId = (orderId || '').toString().trim().replace(/^#/, '');
+
+    console.log('Processing orderId:', sanitizedOrderId, 'overrideEmail:', overrideEmail);
 
     if (!mongoose.Types.ObjectId.isValid(sanitizedOrderId)) {
        console.log(`[SANDBOX] Generating Mock PDF for Dummy ID: ${sanitizedOrderId}`);
