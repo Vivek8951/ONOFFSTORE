@@ -6,7 +6,7 @@ export const getApiUrl = () => {
     const host = window.location.hostname;
     // 2. Global Secure Bridge (Phone to Laptop Everywhere)
     if (host !== 'localhost' && host !== '127.0.0.1') {
-       return 'https://8741bb21fd4a2f.lhr.life'; // YOUR SECURE GLOBAL LINK
+       return 'https://onoffstore.onrender.com'; // YOUR SECURE GLOBAL LINK
     }
   }
 
