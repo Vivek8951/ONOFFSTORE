@@ -14,8 +14,7 @@ const Order = require('./src/models/Order');
 const app = express();
 
 app.use(cors({
-  origin: true, // Allow all origins
-  credentials: true,
+  origin: '*', // Allow all origins explicitly
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
