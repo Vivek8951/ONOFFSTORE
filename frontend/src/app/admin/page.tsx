@@ -114,8 +114,30 @@ export default function AdminDashboard() {
         linkProductId: b.linkProductId
       })));
     } catch (err: any) {
-      console.error('Sync Failure:', err.message || err);
-      setNotifications(prev => [`Sync Failure: ${err.message || err}`, ...prev]);
+      console.warn('[ATELIER SYNC] Attempt failed (Cold Start suspected):', err.message);
+      // Wait 3s and try one last time silently
+      setTimeout(async () => {
+        try {
+           const oData = await (await fetch(`${API_URL}/api/orders/admin/all`)).json();
+           setOrders(oData.map((o: any) => ({
+             id: `#${o._id.slice(-6).toUpperCase()}`,
+             _id: o._id,
+             user: o.customerDetails?.name || 'Member',
+             total: `₹${o.totalAmount}`,
+             status: o.orderStatus || 'Pending',
+             item: o.items?.[0]?.name || 'Luxury Archive',
+             size: o.items?.[0]?.size || 'N/A',
+             date: new Date(o.createdAt).toLocaleString(),
+             customerDetails: o.customerDetails,
+             courier: o.shippingDetails?.courier || '',
+             trackingId: o.shippingDetails?.trackingId || '',
+             isArchived: o.isArchived || false,
+             systemLogs: o.systemLogs || []
+           })));
+        } catch (retryErr: any) {
+           setNotifications(prev => [`Sync Latency: Atelier Hub is currently warming up. [${retryErr.message}]`, ...prev]);
+        }
+      }, 3000);
     } finally {
       setIsReady(true);
     }
@@ -329,11 +351,19 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col md:flex-row font-sans relative">
       
+      {/* MOBILE HEADER: QUICK ACCESS */}
+      <header className="md:hidden bg-[var(--indian-maroon)] text-[var(--indian-gold)] p-4 flex items-center justify-between sticky top-0 z-[110] shadow-xl">
+        <h2 className="text-xl font-serif tracking-widest uppercase italic">ONOFF</h2>
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 border border-[var(--indian-gold)]/30 rounded">
+          {mobileMenuOpen ? '✕' : '☰'}
+        </button>
+      </header>
+
       {/* SIDEBAR: CLASSIC INDIAN MODERN */}
-      <aside className="fixed md:sticky top-0 left-0 bottom-0 w-full md:w-72 bg-[var(--indian-maroon)] border-r border-[#4a030a] p-8 flex flex-col gap-2 text-[#faf9f6] shrink-0 z-[100]">
-        <div className="mb-12 border-b border-[#8b0000] pb-6">
+      <aside className={`fixed md:sticky top-0 left-0 bottom-0 w-72 bg-[var(--indian-maroon)] border-r border-[#4a030a] p-8 flex flex-col gap-2 text-[#faf9f6] shrink-0 z-[100] transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <div className="mb-12 border-b border-[#8b0000] pb-6 hidden md:block">
           <h2 className="text-3xl font-serif tracking-widest uppercase leading-none font-normal text-[var(--indian-gold)]">ONOFF</h2>
           <span className="text-[9px] font-sans uppercase tracking-[0.4em] text-[#faf9f6]/70 mt-2 block">Atelier Console</span>
         </div>
@@ -345,13 +375,22 @@ export default function AdminDashboard() {
             { id: 'discounts', label: 'Privilege Codes', icon: '🎟️' },
             { id: 'banners', label: 'Heritage Banners', icon: '🖼️' }
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-4 text-[11px] font-sans uppercase tracking-[0.2em] p-4 transition-all duration-300 ${activeTab === tab.id ? 'bg-[var(--indian-gold)] text-[var(--indian-maroon)] font-semibold' : 'hover:bg-white/5 text-[#faf9f6]/80'}`}>
+            <button 
+              key={tab.id} 
+              onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false); }} 
+              className={`flex items-center gap-4 text-[11px] font-sans uppercase tracking-[0.2em] p-4 transition-all duration-300 ${activeTab === tab.id ? 'bg-[var(--indian-gold)] text-[var(--indian-maroon)] font-semibold border-l-4 border-[var(--indian-maroon)]' : 'hover:bg-white/5 text-[#faf9f6]/80'}`}
+            >
               <span>{tab.icon}</span>{tab.label}
             </button>
           ))}
         </nav>
         <button onClick={() => setIsAuthenticated(false)} className="flex items-center gap-4 text-[10px] font-sans uppercase tracking-widest p-4 text-[#ce9c41]/50 mt-auto hover:bg-[#8b0000] rounded-none border border-transparent hover:border-[#ce9c41]/30 transition-all">Depart</button>
       </aside>
+
+      {/* Overlay for mobile */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[90] md:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
 
       {/* MAIN CONTENT */}
       <main className="flex-1 p-6 md:p-12 overflow-y-auto">

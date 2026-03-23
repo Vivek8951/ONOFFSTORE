@@ -54,12 +54,12 @@ export default function ShopPage() {
       <Navbar />
 
       {/* Page Header */}
-      <header className="pt-36 pb-12 px-6 md:px-16 border-b border-gray-100">
+      <header className="pt-28 md:pt-36 pb-12 px-6 md:px-16 border-b border-white/20">
         <div className="max-w-7xl mx-auto">
-          <p className="text-[10px] font-serif font-semibold uppercase tracking-[0.4em] text-[var(--indian-maroon)] mb-3">Collection 2024</p>
+          <p className="text-[10px] font-serif font-semibold uppercase tracking-[0.4em] text-[var(--indian-maroon)] mb-3 opacity-60">Collection 2024</p>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div>
-              <h1 className="text-5xl md:text-7xl font-serif font-semibold uppercase italic tracking-tighter leading-none">
+              <h1 className="text-4xl md:text-7xl font-serif font-semibold uppercase italic tracking-tighter leading-none">
                 Shop All
                 <span className="text-[var(--indian-gold)]">.</span>
               </h1>

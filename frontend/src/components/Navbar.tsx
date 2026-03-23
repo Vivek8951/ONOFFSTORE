@@ -9,6 +9,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const isLanding = pathname === '/';
   const [cartCount, setCartCount] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const updateCount = () => {
@@ -31,8 +32,8 @@ export default function Navbar() {
 
   // Floating Luxury Island Design
   return (
-    <div className={`fixed top-8 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-6xl transition-all duration-700 ${isLanding ? 'opacity-0 -translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-      <nav className="bg-white/80 backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[30px] px-8 py-4 flex items-center justify-between">
+    <div className={`fixed top-4 md:top-8 left-1/2 -translate-x-1/2 z-[100] w-[96%] md:w-[92%] max-w-6xl transition-all duration-700 ${isLanding ? 'opacity-0 -translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+      <nav className="bg-white/80 backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[20px] md:rounded-[30px] px-5 md:px-8 py-3 md:py-4 flex items-center justify-between">
         
         {/* Left: Collections */}
         <div className="flex items-center gap-10">
@@ -53,7 +54,7 @@ export default function Navbar() {
         {/* Center: THE LOGO */}
         <div className="absolute left-1/2 -translate-x-1/2">
           <Link href="/" className="flex flex-col items-center group">
-            <div className="text-2xl md:text-3xl font-serif font-semibold italic tracking-tighter uppercase leading-none">
+            <div className="text-lg md:text-3xl font-serif font-semibold italic tracking-tighter uppercase leading-none">
               SMART<span className="text-[var(--indian-gold)]">ON</span>
             </div>
           </Link>
@@ -69,11 +70,42 @@ export default function Navbar() {
             Portal
           </Link>
           {/* Mobile Menu Trigger */}
-          <button className="md:hidden">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="12" y1="6" x2="21" y2="6"></line></svg>
+          <button 
+            className="md:hidden text-[var(--indian-maroon)] hover:text-[var(--indian-gold)] transition-colors p-2"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            )}
           </button>
         </div>
       </nav>
+
+      {/* Luxury Mobile Drawer */}
+      <div className={`fixed inset-0 z-[90] bg-white/95 backdrop-blur-xl transition-all duration-500 ease-in-out md:hidden flex flex-col items-center justify-center gap-12 ${isMobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
+        <div className="flex flex-col items-center gap-8">
+          {[
+            { href: '/shop', label: 'THE COLLECTIONS' },
+            { href: '/my-orders', label: 'MY COMMISSIONS' },
+            { href: '/track', label: 'TRACK ORDER' },
+            { href: '/login', label: 'ATELIER PORTAL' }
+          ].map((link) => (
+            <Link 
+              key={link.href}
+              href={link.href} 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-xl font-serif font-semibold italic uppercase tracking-[0.2em] text-[var(--indian-maroon)] hover:text-[var(--indian-gold)] transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+        
+        <div className="mt-12 w-20 h-[1px] bg-[var(--indian-gold)]/30"></div>
+        <p className="text-[10px] font-sans uppercase tracking-[0.4em] text-gray-400">SMARTON BY ONOFF</p>
+      </div>
     </div>
   );
 }

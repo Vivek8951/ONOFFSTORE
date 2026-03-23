@@ -4,6 +4,10 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const Razorpay = require('razorpay');
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// 💡 NETWORK FIX: Force IPv4 preference (Solves Render -> Gmail ENETUNREACH issues)
+dns.setDefaultResultOrder('ipv4first');
 
 // Route imports
 const productRoutes = require('./src/routes/productRoutes');
@@ -59,7 +63,9 @@ const stream = require('stream');
 
 // 3.5. Email Service Setup (Nodemailer)
 const transporter = nodemailer.createTransport({
-  service: 'gmail', 
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, 
   auth: { 
     user: process.env.EMAIL_USER, 
     // 💡 AUTO-CLEAN: Removes any spaces from the 16-digit App Password automatically

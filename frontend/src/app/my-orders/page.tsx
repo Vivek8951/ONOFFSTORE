@@ -164,6 +164,24 @@ export default function MyOrders() {
 
                 {/* EXPANDED DETAILS */}
                 <div className={`border-t border-[var(--indian-gold)]/20 px-8 md:px-10 bg-[var(--indian-cream)]/30 transition-all duration-500 overflow-hidden ${expandedOrderId === order.id ? 'max-h-[1000px] opacity-100 py-8' : 'max-h-0 opacity-0 py-0'}`}>
+                   <h4 className="text-[11px] font-serif font-semibold uppercase tracking-[0.2em] text-[var(--indian-maroon)] border-b border-[var(--indian-maroon)]/20 pb-3 mb-6">Order Breakdown</h4>
+                   
+                   <div className="flex flex-col gap-4 mb-10 bg-white/50 p-6 border border-[var(--indian-gold)]/20 rounded shadow-sm">
+                     {order.items?.map((item: any, i: number) => (
+                       <div key={i} className="flex gap-4 items-center pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                         <img src={item.image || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=50'} alt={item.name} className="w-10 h-14 object-cover rounded border border-[var(--indian-gold)]/10" />
+                         <div className="flex-1">
+                            <p className="text-[10px] font-serif font-semibold text-[var(--indian-maroon)] italic">{item.name}</p>
+                            <div className="flex gap-3 items-center">
+                              <span className="text-[8px] font-serif uppercase tracking-widest text-gray-400">Size: {item.size || 'M'}</span>
+                              <span className="text-[8px] font-serif uppercase tracking-widest text-gray-400">Qty: {item.quantity || item.qty || 1}</span>
+                            </div>
+                            <p className="text-[10px] font-serif font-semibold text-[var(--indian-gold)]/80">₹{Number(item.price).toLocaleString()}</p>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+
                    <h4 className="text-[11px] font-serif font-semibold uppercase tracking-[0.2em] text-[var(--indian-maroon)] border-b border-[var(--indian-maroon)]/20 pb-3 mb-6">Status Log</h4>
                    
                    <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center relative mb-8">
