@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { getApiUrl } from '@/config/api';
+import { supabase } from '@/config/supabase';
 
 interface Banner {
   id: string;
-  _id?: string;
   title: string;
   image: string;
-  linkProductId?: string;
+  link_product_id?: string;
 }
 
 export default function LandingPage() {
@@ -18,21 +17,21 @@ export default function LandingPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [currentBannerIdx, setCurrentBannerIdx] = useState(0);
 
-  const API_URL = getApiUrl();
-
   useEffect(() => {
     const token = localStorage.getItem('onoff_user_token');
     setIsAuthenticated(!!token);
 
     const fetchBanners = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/banners`);
-        const data = await res.json();
-        setBanners(data);
+        // 🚀 SUPABASE INSTANT SYNC: High-Speed Hero Feed
+        const { data } = await supabase.from('banners').select('*').eq('active', true);
+        if (data) setBanners(data);
       } catch (err) { console.error("Banner Feed Failure"); }
     };
     fetchBanners();
-    const interval = setInterval(fetchBanners, 10000);
+    
+    // Automatic Refresh every 60s (Slow refresh for battery/performance on landing)
+    const interval = setInterval(fetchBanners, 60000);
 
     const handleScroll = () => setScrolled(window.scrollY);
     window.addEventListener('scroll', handleScroll);
@@ -72,7 +71,7 @@ export default function LandingPage() {
               
               {/* Floating Content */}
               <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                 <h1 className="text-[10vw] md:text-[8vw] font-serif text-[#FAF9F6] font-normal leading-[1.1] tracking-wide text-center drop-shadow-2xl transition-all duration-1000"
+                 <h1 className="text-[10vw] md:text-[8vw] font-serif text-[#FAF9F6] font-normal leading-[1.1] tracking-wide text-center drop-shadow-2xl transition-all duration-1000 uppercase"
                      style={{ opacity: 1 - scrolled * 0.002 }}>
                    {banner.title}
                  </h1>
@@ -96,7 +95,7 @@ export default function LandingPage() {
                    </div>
                 </div>
              </div>
-             <p className="absolute bottom-24 text-xs font-serif tracking-[0.3em] text-[#CE9C41] uppercase animate-pulse">Curating The Archive...</p>
+             <p className="absolute bottom-24 text-xs font-serif tracking-[0.3em] text-[#CE9C41] uppercase animate-pulse">Atelier Hub Syncing...</p>
           </div>
         )}
 
@@ -127,73 +126,19 @@ export default function LandingPage() {
                     alt="Heritage"
                   />
                </div>
-               <div className="absolute -bottom-8 -right-8 w-48 h-48 border border-[#CE9C41] z-0 hidden md:block"></div>
-               <div className="absolute -top-8 -left-8 w-32 h-32 bg-[#68050E] z-0 hidden md:block opacity-5"></div>
             </div>
             
-            <div className="md:col-span-7 flex flex-col gap-10 order-1 md:order-2 pl-0 md:pl-12">
+            <div className="md:col-span-7 flex flex-col gap-10 order-1 md:order-2 pl-0 md:pl-12 text-center md:text-left">
                <span className="text-[#CE9C41] text-xs font-sans tracking-[0.4em] uppercase font-semibold">The Philosophy</span>
                <h2 className="text-5xl md:text-7xl font-serif text-[#68050E] leading-[1.1]">
                   Rooted In Heritage, <br /> Designed For The <br /> Modern Era.
                </h2>
-               <p className="text-lg md:text-xl text-gray-600 font-serif leading-relaxed max-w-2xl border-l-2 border-[#CE9C41] pl-8">
-                  Discover luxury that transcends time. Each piece in our collection is meticulously crafted, blending classic Indian artistry with contemporary silhouettes. Limited editions, unparalleled elegance.
-               </p>
-               <div className="flex gap-16 mt-8 border-t border-[#e0dacd] pt-8 text-xs font-sans uppercase tracking-[0.2em] text-[#68050E]">
-                  <div className="flex flex-col gap-2 font-semibold"><span className="text-gray-400">Craftsmanship</span><span>Artisanal</span></div>
-                  <div className="flex flex-col gap-2 font-semibold"><span className="text-gray-400">Origin</span><span>India</span></div>
-                  <div className="flex flex-col gap-2 font-semibold"><span className="text-gray-400">Purity</span><span>100% Authentic</span></div>
+               <div className="flex gap-16 mt-8 justify-center md:justify-start border-t border-[#e0dacd] pt-8 text-xs font-sans uppercase tracking-[0.2em] text-[#68050E]">
+                  <div className="flex flex-col gap-2 font-semibold"><span>Artisanal</span></div>
+                  <div className="flex flex-col gap-2 font-semibold"><span>India</span></div>
+                  <div className="flex flex-col gap-2 font-semibold"><span>Authentic</span></div>
                </div>
             </div>
-         </div>
-      </section>
-
-      {/* 🖼️ THE GALLERY OF DROPS - Elegant Grid */}
-      <section className="relative z-20 py-40 bg-white">
-         <div className="flex flex-col items-center mb-24 text-center">
-            <span className="text-[#CE9C41] text-xs font-sans tracking-[0.4em] uppercase font-semibold mb-6">Archive Releases</span>
-            <h2 className="text-4xl md:text-5xl font-serif text-[#68050E]">
-              The Signature Series
-            </h2>
-            <div className="w-16 h-[1px] bg-[#68050E] mt-8"></div>
-         </div>
-
-         <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
-            {[
-              { img: 'https://images.unsplash.com/photo-1610030469983-98e550d61dc0?w=600', title: 'Regal Velvet Sherwani', detail: 'Hand-embroidered' },
-              { img: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600', title: 'Silk Fusion Drape', detail: 'Varanasi Weave' },
-              { img: 'https://images.unsplash.com/photo-1583391733975-6b45e45c48b2?q=80', title: 'Classic Jodhpuri Suit', detail: 'Tailored fit' }
-            ].map((item, i) => (
-              <div key={i} className="group flex flex-col gap-6 cursor-pointer">
-                 <div className="h-[600px] overflow-hidden border border-[#e0dacd] bg-[#FAF9F6] p-3">
-                    <img src={item.img} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-1000" alt={item.title} />
-                 </div>
-                 <div className="flex flex-col items-center text-center">
-                    <h3 className="text-xl font-serif text-[#68050E] mb-2">{item.title}</h3>
-                    <p className="text-xs font-sans text-gray-500 uppercase tracking-widest">{item.detail}</p>
-                 </div>
-              </div>
-            ))}
-         </div>
-         <div className="flex justify-center mt-20">
-             <Link href="/shop" className="px-12 py-4 border border-[#68050E] text-[#68050E] font-sans text-xs uppercase tracking-[0.3em] hover:bg-[#68050E] hover:text-white transition-all duration-500">
-                View Complete Catalog
-             </Link>
-         </div>
-      </section>
-
-      {/* 🏺 FINAL GATEWAY - Luxurious Footer Lead */}
-      <section className="relative z-20 py-40 flex flex-col items-center justify-center text-center bg-[#68050E] overflow-hidden">
-         {/* Subtle Pattern Background */}
-         <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(#CE9C41 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-         
-         <div className="relative z-10 flex flex-col items-center gap-10 max-w-4xl px-6">
-            <h2 className="text-5xl md:text-7xl font-serif text-[#FAF9F6] leading-[1.2]">
-              Experience True Elegance.
-            </h2>
-            <Link href="/login" className="mt-8 px-16 py-6 bg-[#CE9C41] text-[#68050E] font-sans font-semibold text-xs uppercase tracking-[0.3em] hover:bg-white transition-colors duration-500">
-               Sign In & Explore
-            </Link>
          </div>
       </section>
 
@@ -201,7 +146,6 @@ export default function LandingPage() {
          <div className="flex gap-10">
             <span className="hover:text-[#CE9C41] cursor-pointer transition-colors">Boutiques</span>
             <span className="hover:text-[#CE9C41] cursor-pointer transition-colors">Client Care</span>
-            <span className="hover:text-[#CE9C41] cursor-pointer transition-colors">Legal</span>
          </div>
          <div className="text-3xl font-serif text-[#68050E] tracking-widest">ONOFF</div>
          <div className="flex gap-10 text-right">
@@ -211,20 +155,10 @@ export default function LandingPage() {
       </footer>
 
       <style jsx global>{`
-        @keyframes spinSlowReverse {
-          from { transform: rotate(360deg); }
-          to { transform: rotate(0deg); }
-        }
-        .animate-spin-slow-reverse {
-          animation: spinSlowReverse 30s linear infinite;
-        }
-        @keyframes spinSlow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spinSlow 40s linear infinite;
-        }
+        @keyframes spinSlowReverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        .animate-spin-slow-reverse { animation: spinSlowReverse 30s linear infinite; }
+        @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spinSlow 40s linear infinite; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-fade-in { animation: fadeIn 2s ease-out; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }

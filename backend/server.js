@@ -10,6 +10,13 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const Razorpay = require('razorpay');
 const { google } = require('googleapis');
+const { createClient } = require('@supabase/supabase-js');
+
+// 🚀 SUPABASE SECURE HUB: High-Performance Database
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
 
 // Route imports
 const productRoutes = require('./src/routes/productRoutes');
@@ -228,7 +235,22 @@ orderRouter.post('/create', async (req, res) => {
        }
     });
 
-    res.json({ success: true, dbOrderId: newOrder._id, razorpayOrder: rzpOrder });
+    // 4. 🚀 SUPABASE HUB SYNC: Instant Feed Registry
+    const { data: sbOrder, error: sbErr } = await supabase.from('orders').insert({
+      total_amount: totalAmount,
+      customer_details: customerDetails,
+      items: items.map(i => ({ ...i, image: i.image || '' })), // Keep full detail for history
+      order_status: 'Accepted' // Automatically accept for new hub efficiency
+    }).select().single();
+
+    if (sbErr) console.warn('⚠️ Supabase sync deferred:', sbErr.message);
+
+    res.json({ 
+      success: true, 
+      dbOrderId: newOrder._id, 
+      supabaseId: sbOrder?.id,
+      razorpayOrder: rzpOrder 
+    });
   } catch (error) {
     console.error('Order creation error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -338,6 +360,16 @@ orderRouter.put('/:id/status', async (req, res) => {
     }
 
     await order.save();
+
+    // 🚀 SUPABASE SYNC: High-Speed Update
+    await supabase.from('orders')
+      .update({ 
+         order_status: status, 
+         shipping_details: { courier, trackingId } 
+      })
+      .filter('customer_details->>email', 'eq', order.customerDetails?.email)
+      .filter('total_amount', 'eq', order.totalAmount);
+
     res.json({ success: true, message: `Order Protocol Updated: ${status}` });
   } catch (error) {
     res.status(500).json({ error: 'Backend Transmission Failed' });
