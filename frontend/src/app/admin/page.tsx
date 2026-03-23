@@ -353,27 +353,15 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col md:flex-row font-sans relative">
       
-      {/* MOBILE HEADER: THE COMMAND BAR */}
-      <header className="md:hidden bg-[var(--indian-maroon)] text-[var(--indian-gold)] px-6 py-5 flex items-center justify-between sticky top-0 z-[120] border-b border-[#4a030a] shadow-2xl">
-        <div className="flex flex-col">
-          <h2 className="text-lg font-serif tracking-[0.2em] uppercase leading-none">ONOFF</h2>
-          <span className="text-[7px] uppercase tracking-widest text-white/50 mt-1">Console Hub</span>
-        </div>
-        <button 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-          className="w-10 h-10 flex items-center justify-center bg-white/5 rounded-full border border-[var(--indian-gold)]/20 active:scale-90 transition-transform"
-        >
-          {mobileMenuOpen ? (
-            <span className="text-xl">✕</span>
-          ) : (
-            <span className="text-xl">☰</span>
-          )}
-        </button>
-      </header>
+      {/* MOBILE BRAND STRIP */}
+      <div className="md:hidden pt-8 px-6 pb-2 text-center">
+        <h2 className="text-xl font-serif tracking-[0.3em] uppercase italic text-[var(--indian-maroon)]">ONOFF</h2>
+        <span className="text-[7px] uppercase tracking-[0.5em] text-gray-400 mt-1 block">Atelier Console Hub</span>
+      </div>
 
-      {/* SIDEBAR: DRAWER-STYLE FOR MOBILE */}
-      <aside className={`fixed md:sticky top-0 md:top-0 left-0 bottom-0 w-[85vw] md:w-72 bg-[#700109] border-r border-[#4a030a] p-8 flex flex-col gap-2 text-[#faf9f6] shrink-0 z-[110] transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="mb-12 border-b border-[#8b0000] pb-6 hidden md:block">
+      {/* SIDEBAR: DESKTOP ONLY */}
+      <aside className={`fixed md:sticky top-0 md:top-0 left-0 bottom-0 w-72 bg-[#700109] border-r border-[#4a030a] p-8 flex flex-col gap-2 text-[#faf9f6] shrink-0 z-[110] hidden md:flex`}>
+        <div className="mb-12 border-b border-[#8b0000] pb-6">
           <h2 className="text-3xl font-serif tracking-widest uppercase leading-none font-normal text-[var(--indian-gold)]">ONOFF</h2>
           <span className="text-[9px] font-sans uppercase tracking-[0.4em] text-[#faf9f6]/70 mt-2 block">Atelier Console</span>
         </div>
@@ -387,7 +375,7 @@ export default function AdminDashboard() {
           ].map(tab => (
             <button 
               key={tab.id} 
-              onClick={() => { setActiveTab(tab.id); setMobileMenuOpen(false); }} 
+              onClick={() => setActiveTab(tab.id)} 
               className={`flex items-center gap-4 text-[11px] font-sans uppercase tracking-[0.2em] p-4 transition-all duration-300 ${activeTab === tab.id ? 'bg-[var(--indian-gold)] text-[var(--indian-maroon)] font-semibold border-l-4 border-[var(--indian-maroon)]' : 'hover:bg-white/5 text-[#faf9f6]/80'}`}
             >
               <span>{tab.icon}</span>{tab.label}
@@ -396,11 +384,6 @@ export default function AdminDashboard() {
         </nav>
         <button onClick={() => setIsAuthenticated(false)} className="flex items-center gap-4 text-[10px] font-sans uppercase tracking-widest p-4 text-[#ce9c41]/50 mt-auto hover:bg-[#8b0000] rounded-none border border-transparent hover:border-[#ce9c41]/30 transition-all">Depart</button>
       </aside>
-
-      {/* Overlay for mobile */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/50 z-[90] md:hidden backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-      )}
 
       {/* ADMIN BOTTOM DOCK: MOBILE ONLY */}
       <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[105] w-[94%] max-w-sm">
