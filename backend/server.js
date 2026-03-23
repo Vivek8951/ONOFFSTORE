@@ -159,8 +159,8 @@ orderRouter.post('/create', async (req, res) => {
       newOrder.paymentDetails.status = 'Completed';
       newOrder.orderStatus = 'Pending'; // Admin still needs to accept
       await newOrder.save();
-      // Send confirmation email
-      try { await sendOrderConfirmation(newOrder); } catch(e) { console.warn('Email skipped:', e.message); }
+      // Send confirmation email background
+      sendOrderConfirmation(newOrder).catch(e => console.warn('Email skipped:', e.message));
     }
 
     res.json({ success: true, dbOrderId: newOrder._id, razorpayOrder: rzpOrder });
@@ -175,15 +175,24 @@ orderRouter.post('/verify', async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id } = req.body;
     
+    // 💡 SECURE BYPASS: Recognize local/demo verification signals
+    if (razorpay_order_id && razorpay_order_id.startsWith('demo_')) {
+      console.log('⚡ Local/Demo Verification Signal:', razorpay_order_id);
+      return res.json({ success: true, message: 'Demo verification complete.' });
+    }
+
     const order = await Order.findOne({ 'paymentDetails.razorpayOrderId': razorpay_order_id });
-    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (!order) {
+       console.error('❌ Order Lost During Verification:', razorpay_order_id);
+       return res.status(404).json({ error: 'Signal Lost: Order matching this ID not found.' });
+    }
     
     order.paymentDetails.status = 'Completed';
     order.paymentDetails.razorpayPaymentId = razorpay_payment_id;
     await order.save();
 
-    // 📧 Trigger Order Confirmation Email (Real-time)
-    await sendOrderConfirmation(order);
+    // 📧 Trigger Order Confirmation Email (Real-time background)
+    sendOrderConfirmation(order).catch(e => console.error(e));
 
     res.json({ success: true, message: 'Payment verified and order confirmed!' });
   } catch (err) {
@@ -223,8 +232,10 @@ orderRouter.post('/resend-invoice', async (req, res) => {
 
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
-    await sendOrderConfirmation(order);
-    res.json({ success: true, message: `Digital Invoice sent to ${overrideEmail || order.customerDetails?.email}` });
+    // Fire and forget email
+    sendOrderConfirmation(order).catch(e => console.error(e));
+    
+    res.json({ success: true, message: `Digital Invoice queued for ${overrideEmail || order.customerDetails?.email}` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

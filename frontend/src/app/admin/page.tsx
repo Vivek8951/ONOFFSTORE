@@ -39,6 +39,8 @@ export default function AdminDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
+  const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
   
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -195,49 +197,52 @@ export default function AdminDashboard() {
 
   // --- ✉️ ORDER & INVOICE HANDLERS ---
   const handleSendInvoice = async (orderId: string, overrideEmail: string) => {
-    setIsRefreshing(true);
+    if (!overrideEmail) { alert('Specify an email destination'); return; }
+    setSendingInvoiceId(orderId);
     try {
       const payload = {
         orderId: (orderId || '').toString().trim().replace(/^#/, ''),
         overrideEmail: (overrideEmail || '').trim()
       };
-      console.log('Sending invoice request:', { url: `${API_URL}/api/orders/resend-invoice`, payload });
-
+      
       const res = await fetch(`${API_URL}/api/orders/resend-invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      console.log('Response status:', res.status, res.statusText);
-
       const json = await res.json();
-      console.log('Response data:', json);
 
       if (res.ok) {
-        setNotifications([`Premium Bill sent to ${json.message || payload.overrideEmail}`, ...notifications]);
-        alert(`Invoice sent: ${json.message || 'Success'}`);
+        setNotifications([`Premium Bill queued for ${payload.overrideEmail}`, ...notifications]);
+        alert(`Invoice queued: ${json.message || 'Success'}`);
       } else {
         alert(`Email error (${res.status}): ${json.error || 'SMTP/Server issue'}`);
       }
     } catch (err: any) {
-      console.error('Invoice send error:', err);
       alert(`Protocol Failure: ${err?.message || err}`);
     } finally {
-      setIsRefreshing(false);
+      setSendingInvoiceId(null);
     }
   };
 
   const handleUpdateOrderStatus = async (id: string, update: any) => {
+    setIsRefreshing(true);
     try {
-      await fetch(`${API_URL}/api/orders/${id}/status`, {
+      const res = await fetch(`${API_URL}/api/orders/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(update)
       });
-      setEditingOrder(null);
-      fetchArchive();
-    } catch (err) { alert('Sync failure'); }
+      if (res.ok) {
+        setNotifications([`Order protocol updated for #${id.slice(-6).toUpperCase()}`, ...notifications]);
+        setEditingOrder(null);
+        await fetchArchive();
+      } else {
+        alert('Transmission Error: Deployment hub reported an issue.');
+      }
+    } catch (err) { alert('Sync failure: Could not reach backend.'); }
+    finally { setIsRefreshing(false); }
   };
 
   const handleToggleDiscount = (code: string) => {
@@ -464,7 +469,9 @@ export default function AdminDashboard() {
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                 </button>
               </div>
-              <div className="bg-white px-4 py-2 border rounded-full text-[10px] font-serif font-semibold uppercase tracking-widest text-[var(--indian-maroon)]">● Real-time Sync Active</div>
+              <div className="bg-white px-4 py-2 border rounded-full text-[10px] font-serif font-semibold uppercase tracking-widest text-[var(--indian-maroon)] shadow-sm">
+                <span className="animate-pulse mr-2">●</span> Real-time Hub Sync Active (Last: {lastSync})
+              </div>
             </div>
 
             {/* Order Processing Modal */}
@@ -600,11 +607,11 @@ export default function AdminDashboard() {
                                 const targetId = (order._id || order.id || '').toString().trim().replace(/^#/, '');
                                 handleSendInvoice(targetId, input?.value || order.customerDetails?.email || '');
                               }}
-                              disabled={isRefreshing}
-                              className={`bg-[var(--indian-maroon)] text-white px-4 py-2 text-[10px] font-serif font-semibold uppercase tracking-widest hover:bg-[var(--indian-gold)] transition-all rounded flex items-center gap-1 ${isRefreshing ? 'opacity-50' : ''}`}
+                              disabled={sendingInvoiceId === order.id || sendingInvoiceId === order._id}
+                              className={`bg-[var(--indian-maroon)] text-white px-4 py-2 text-[10px] font-serif font-semibold uppercase tracking-widest hover:bg-[var(--indian-gold)] transition-all rounded flex items-center gap-1 ${(sendingInvoiceId === order.id || sendingInvoiceId === order._id) ? 'opacity-50' : ''}`}
                             >
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                              {isRefreshing ? 'Sending...' : 'Send Bill'}
+                              {(sendingInvoiceId === order.id || sendingInvoiceId === order._id) ? 'Sending...' : 'Send Bill'}
                             </button>
                           </div>
                           <input 
