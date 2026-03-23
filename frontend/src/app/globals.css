@@ -6,37 +6,64 @@
 
 @layer base {
   :root {
-    --indian-maroon: #68050e;
-    --indian-red: #8b0000;
-    --indian-gold: #ce9c41;
+    --indian-maroon: #5a0208;
+    --indian-red: #7a0000;
+    --indian-gold: #d4af37;
     --indian-cream: #faf9f6;
-    --indian-sand: #f4f0ec;
+    --indian-midnight: #0a0a0b;
+    --indian-glow: rgba(212, 175, 55, 0.3);
   }
   body {
-    @apply bg-[var(--indian-cream)] text-gray-900 antialiased font-sans selection:bg-[var(--indian-gold)] selection:text-white;
+    @apply bg-[var(--indian-cream)] text-gray-900 antialiased font-sans selection:bg-[var(--indian-gold)] selection:text-white transition-colors duration-700;
   }
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm transition-all duration-300;
+  .glass-card {
+    @apply bg-white/40 backdrop-blur-3xl border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] hover:border-[var(--indian-gold)]/40 transition-all duration-500;
   }
   
-  .glass-dark {
-    @apply bg-black/70 backdrop-blur-md border border-white/10 shadow-sm transition-all duration-300;
+  .glass-midnight {
+    @apply bg-[#0a0a0b]/80 backdrop-blur-2xl border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all duration-500;
+  }
+
+  .gold-glow {
+    filter: drop-shadow(0 0 10px var(--indian-glow));
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
   }
 }
 
-/* Custom Hide Scrollbar */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
 }
-.no-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+::-webkit-scrollbar-track {
+  background: var(--indian-cream);
+}
+::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--indian-gold);
 }
 
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

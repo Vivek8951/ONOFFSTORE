@@ -30,92 +30,72 @@ export default function Navbar() {
     return () => window.removeEventListener('storage', updateCount);
   }, []);
 
-  // Floating Luxury Island Design
+  // Elite Luxury Experience
   return (
-    <div className={`fixed top-0 md:top-8 left-0 md:left-1/2 md:-translate-x-1/2 z-[100] w-full md:w-[92%] max-w-6xl transition-all duration-700 ${isLanding ? 'opacity-0 -translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-      <nav className="bg-transparent md:bg-white/80 md:backdrop-blur-2xl md:border md:border-white/20 md:shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-none md:rounded-[30px] px-6 md:px-8 py-5 md:py-4 flex items-center justify-between">
+    <div className={`fixed top-0 left-0 z-[100] w-full transition-all duration-700 ${isLanding ? 'opacity-0 -translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+      
+      {/* MINIMALIST TOP BRAND HUB */}
+      <header className="px-6 py-6 md:px-12 md:py-8 flex items-center justify-between">
+         <Link href="/" className="group flex flex-col">
+            <h1 className="text-2xl md:text-3xl font-serif font-bold tracking-[0.4em] uppercase italic text-[var(--indian-maroon)] group-hover:text-[var(--indian-gold)] transition-colors duration-500">
+               SMART<span className="text-[var(--indian-gold)]">ON</span>
+            </h1>
+            <span className="text-[7px] uppercase tracking-[0.8em] text-gray-400 mt-1 opacity-60">Atelier Worldwide</span>
+         </Link>
 
-        
-        {/* Left: Collections (Hidden on Mobile) */}
-        <div className="flex items-center gap-10 hidden md:flex">
-          <Link href="/shop" className="group relative flex flex-col items-center">
-            <span className="text-[10px] font-serif font-semibold uppercase tracking-[0.3em] text-[var(--indian-maroon)]">Shop</span>
-            <div className="h-[1px] w-0 bg-[var(--indian-gold)] group-hover:w-full transition-all duration-300"></div>
-          </Link>
-          <Link href="/my-orders" className="group relative flex flex-col items-center">
-            <span className="text-[10px] font-serif font-semibold uppercase tracking-[0.3em] text-[var(--indian-maroon)]/50 group-hover:text-[var(--indian-maroon)] transition-colors">My Orders</span>
-            <div className="h-[1px] w-0 bg-[var(--indian-gold)] group-hover:w-full transition-all duration-300"></div>
-          </Link>
-        </div>
+         {/* Desktop Only Navigation Links */}
+         <div className="hidden md:flex items-center gap-12 bg-white/50 backdrop-blur-xl border border-white/20 px-8 py-3 rounded-full shadow-sm">
+            {['Shop', 'My Orders', 'Portal'].map((label) => (
+               <Link 
+                  key={label}
+                  href={label === 'Shop' ? '/shop' : label === 'My Orders' ? '/my-orders' : '/login'} 
+                  className="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-500 hover:text-[var(--indian-gold)] transition-all"
+               >
+                  {label}
+               </Link>
+            ))}
+         </div>
 
-        {/* Center: THE LOGO */}
-        <div className="absolute left-1/2 -translate-x-1/2">
-          <Link href="/" className="flex flex-col items-center group">
-            <div className="text-lg md:text-3xl font-serif font-semibold italic tracking-tighter uppercase leading-none">
-              SMART<span className="text-[var(--indian-gold)]">ON</span>
-            </div>
-          </Link>
-        </div>
+         <div className="flex items-center gap-6">
+            <Link href="/cart" className="relative group p-2 rounded-full hover:bg-[var(--indian-gold)]/10 transition-all">
+               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--indian-maroon)]"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+               {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[var(--indian-gold)] text-[var(--indian-maroon)] text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                     {cartCount}
+                  </span>
+               )}
+            </Link>
+         </div>
+      </header>
 
-        {/* Right: Actions (Hidden on Mobile except Cart) */}
-        <div className="flex items-center gap-8">
-          <Link href="/cart" className="relative group text-[var(--indian-maroon)] md:text-[var(--indian-maroon)] hover:text-[var(--indian-gold)] transition-colors p-2 md:p-0">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-            {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-[var(--indian-gold)] text-[var(--indian-maroon)] text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white md:border-[var(--indian-maroon)]">{cartCount}</span>}
-          </Link>
-          <Link href="/login" className="bg-[var(--indian-maroon)] text-[var(--indian-gold)] px-6 py-2 rounded-sm text-[9px] font-serif font-semibold uppercase tracking-[0.2em] hover:bg-[var(--indian-gold)] hover:text-white transition-all hidden md:block border border-[var(--indian-maroon)] shadow-sm">
-            Portal
-          </Link>
-        </div>
-      </nav>
-
-
-      {/* Luxury Mobile Drawer */}
-      <div className={`fixed inset-0 z-[90] bg-white/95 backdrop-blur-xl transition-all duration-500 ease-in-out md:hidden flex flex-col items-center justify-center gap-12 ${isMobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
-        <div className="flex flex-col items-center gap-8">
+      {/* ELITE BOTTOM COMMAND BAR: MOBILE ONLY */}
+      <div className="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-[110] w-[92%] max-w-[400px]">
+        <div className="glass-midnight rounded-[28px] p-2 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.4)] border-b-2 border-b-[var(--indian-gold)]/30">
           {[
-            { href: '/shop', label: 'THE COLLECTIONS' },
-            { href: '/my-orders', label: 'MY COMMISSIONS' },
-            { href: '/track', label: 'TRACK ORDER' },
-            { href: '/login', label: 'ATELIER PORTAL' }
-          ].map((link) => (
+            { id: 'shop', href: '/shop', icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22 9 12 15 12 15 22' },
+            { id: 'orders', href: '/my-orders', icon: 'M1 3h15v13H1z M16 8h4l3 3v5h-7z M5.5 18.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z M18.5 18.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z' },
+            { id: 'cart', href: '/cart', icon: 'M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M16 10a4 4 0 0 1-8 0' },
+            { id: 'admin', href: '/admin', icon: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z' }
+          ].map((item) => (
             <Link 
-              key={link.href}
-              href={link.href} 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-xl font-serif font-semibold italic uppercase tracking-[0.2em] text-[var(--indian-maroon)] hover:text-[var(--indian-gold)] transition-colors"
+               key={item.id}
+               href={item.href} 
+               className={`flex-1 py-4 flex flex-col items-center justify-center transition-all duration-300 ${pathname === item.href ? 'text-[var(--indian-gold)] scale-110' : 'text-gray-500 hover:text-white/80'}`}
             >
-              {link.label}
+               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={pathname === item.href ? 'gold-glow' : ''}>
+                  <path d={item.icon.split(' ')[0]} />
+                  {item.icon.split(' ')[1] && <path d={item.icon.split(' ')[1]} />}
+                  {item.icon.split(' ')[2] && <circle cx={item.icon.split(' ')[2].split(' ')[1]} cy={item.icon.split(' ')[2].split(' ')[2]} r={item.icon.split(' ')[2].split(' ')[3]} />}
+               </svg>
+               {item.id === 'cart' && cartCount > 0 && pathname !== '/cart' && (
+                  <div className="absolute top-3 right-5 w-1.5 h-1.5 bg-[var(--indian-gold)] rounded-full animate-pulse shadow-[0_0_10px_var(--indian-gold)]"></div>
+               )}
             </Link>
           ))}
         </div>
-        
-        <div className="mt-12 w-20 h-[1px] bg-[var(--indian-gold)]/30"></div>
-        <p className="text-[10px] font-sans uppercase tracking-[0.4em] text-gray-400">SMARTON BY ONOFF</p>
-      </div>
-
-      {/* LUXURY BOTTOM DOCK: MOBILE ONLY */}
-      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] w-[90%] max-w-md">
-        <div className="bg-[var(--indian-maroon)]/90 backdrop-blur-3xl border border-white/10 rounded-full px-8 py-4 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-b-2 border-b-[var(--indian-gold)]/40 overflow-hidden ring-1 ring-white/5">
-          <Link href="/shop" className={`flex flex-col items-center gap-1 ${pathname === '/shop' ? 'text-[var(--indian-gold)]' : 'text-white/60'}`}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-          </Link>
-
-          <Link href="/my-orders" className={`flex flex-col items-center gap-1 ${pathname === '/my-orders' ? 'text-[var(--indian-gold)]' : 'text-white/60'}`}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-          </Link>
-
-          <Link href="/cart" className={`relative flex flex-col items-center gap-1 ${pathname === '/cart' ? 'text-[var(--indian-gold)]' : 'text-white/60'}`}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-            {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-[var(--indian-gold)] text-[var(--indian-maroon)] text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-[var(--indian-maroon)]">{cartCount}</span>}
-          </Link>
-
-          <Link href="/admin" className={`flex flex-col items-center gap-1 ${pathname === '/admin' ? 'text-[var(--indian-gold)]' : 'text-white/60'}`}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path><path d="M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
-          </Link>
-        </div>
       </div>
     </div>
+
 
   );
 }
