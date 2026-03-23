@@ -64,56 +64,61 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER, 
     // 💡 AUTO-CLEAN: Removes any spaces from the 16-digit App Password automatically
     pass: (process.env.EMAIL_PASS || '').replace(/\s/g, '') 
-  }
+  },
+  // 🛰️ ATELIER SAFETY: Prevent SMTP stalls in production
+  connectionTimeout: 5000,
+  greetingTimeout: 5000,
+  socketTimeout: 7000
 });
 
-const sendOrderConfirmation = async (order) => {
-  try {
-    const fileName = `SMARTON_INVOICE_${order._id.toString().slice(-6).toUpperCase()}.pdf`;
-    
-    // 💡 PDF STREAM SETUP
-    const pdfStream = new stream.PassThrough();
-    generateInvoicePDF(order, pdfStream);
+const sendOrderConfirmation = (order) => {
+  setImmediate(async () => {
+    try {
+      console.log(`[ORDER SIGNAL] Deep processing email for Order: ${order._id}`);
+      const fileName = `SMARTON_INVOICE_${order._id.toString().slice(-6).toUpperCase()}.pdf`;
+      
+      const pdfStream = new stream.PassThrough();
+      generateInvoicePDF(order, pdfStream);
 
-    const pdfBuffer = await new Promise((resolve, reject) => {
-      const chunks = [];
-      pdfStream.on('data', chunk => chunks.push(chunk));
-      pdfStream.on('end', () => resolve(Buffer.concat(chunks)));
-      pdfStream.on('error', reject);
-    });
+      const pdfBuffer = await new Promise((resolve, reject) => {
+        const chunks = [];
+        pdfStream.on('data', chunk => chunks.push(chunk));
+        pdfStream.on('end', () => resolve(Buffer.concat(chunks)));
+        pdfStream.on('error', reject);
+      });
 
-    const mailOptions = {
-      from: `"SMARTON BY ONOFF" <${process.env.EMAIL_USER}>`,
-      to: order.customerDetails.email,
-      subject: `Order Confirmed & Digital Bill: #${order._id.toString().slice(-6).toUpperCase()}`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px; border-radius: 10px;">
-          <h1 style="text-transform: uppercase; letter-spacing: 5px; text-align: center; color: #000;">SMARTON</h1>
-          <p style="text-align: center; font-size: 10px; tracking: 2px; color: #888;">BY ONOFF STORE</p>
-          <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-          <h2 style="font-size: 14px; text-transform: uppercase;">Purchase Confirmation</h2>
-          <p>Dear <b>${order.customerDetails.name}</b>,</p>
-          <p>Your luxury pieces from SMARTON have been confirmed. We have attached your **Official Digital Bill** as a PDF to this email.</p>
-          
-          <div style="background: #fcfcfc; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 5px 0; font-size: 12px;"><b>Order ID:</b> ${order._id}</p>
-            <p style="margin: 5px 0; font-size: 12px;"><b>Amount Paid:</b> ₹${order.totalAmount}</p>
+      const mailOptions = {
+        from: `"SMARTON BY ONOFF" <${process.env.EMAIL_USER}>`,
+        to: order.customerDetails.email,
+        subject: `Order Confirmed & Digital Bill: #${order._id.toString().slice(-6).toUpperCase()}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px; border-radius: 10px;">
+            <h1 style="text-transform: uppercase; letter-spacing: 5px; text-align: center; color: #000;">SMARTON</h1>
+            <p style="text-align: center; font-size: 10px; tracking: 2px; color: #888;">BY ONOFF STORE</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+            <h2 style="font-size: 14px; text-transform: uppercase;">Purchase Confirmation</h2>
+            <p>Dear <b>${order.customerDetails.name}</b>,</p>
+            <p>Your luxury pieces from SMARTON have been confirmed. We have attached your **Official Digital Bill** as a PDF to this email.</p>
+            
+            <div style="background: #fcfcfc; padding: 20px; border-radius: 5px; margin: 20px 0;">
+              <p style="margin: 5px 0; font-size: 12px;"><b>Order ID:</b> ${order._id}</p>
+              <p style="margin: 5px 0; font-size: 12px;"><b>Amount Paid:</b> ₹${order.totalAmount}</p>
+            </div>
+
+            <p style="font-size: 12px; color: #666; font-style: italic;">Thank you for your refined choice.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+            <p style="font-size: 10px; color: #aaa; text-align: center; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} SMARTON WORLDWIDE • MUMBAI</p>
           </div>
+        `,
+        attachments: [{ filename: fileName, content: pdfBuffer }]
+      };
 
-          <p style="font-size: 12px; color: #666; font-style: italic;">Thank you for your refined choice.</p>
-          <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-          <p style="font-size: 10px; color: #aaa; text-align: center; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} SMARTON WORLDWIDE • MUMBAI</p>
-        </div>
-      `,
-      attachments: [{ filename: fileName, content: pdfBuffer }]
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('📧 Premium Invoice & PDF Sent:', info.messageId);
-  } catch (err) {
-    console.log('⚠️ Failed to send PDF email. Service might be unconfigured.');
-    console.error('Error:', err.message);
-  }
+      await transporter.sendMail(mailOptions);
+      console.log('[ORDER SIGNAL] Digital Bill successfully dispatched.');
+    } catch (err) {
+      console.error('[ORDER SIGNAL] Background Transmission Failed:', err.message);
+    }
+  });
 };
 
 
@@ -134,6 +139,19 @@ orderRouter.post('/create', async (req, res) => {
       'paymentDetails.status': 'Pending'
     });
     await newOrder.save();
+
+    // 💡 ATELIER INVENTORY HUB: Decrement stock for purchased items
+    try {
+      for (const item of items) {
+        const product = await mongoose.model('Product').findById(item.product);
+        if (product && product.stock > 0) {
+          product.stock = Math.max(0, product.stock - (item.quantity || 1));
+          await product.save();
+        }
+      }
+    } catch (stockErr) {
+      console.warn('⚠️ Stock adjustment deferred:', stockErr.message);
+    }
 
     // 2. Try Razorpay — skip gracefully if keys are not configured
     let rzpOrder = null;
@@ -202,42 +220,55 @@ orderRouter.post('/verify', async (req, res) => {
 
 // Admin: Resend Invoice via Email (Supports Sandbox Mode for Dummy IDs)
 orderRouter.post('/resend-invoice', async (req, res) => {
-  console.log('📧 Resend invoice request received:', req.body);
+  const rid = Math.random().toString(36).slice(2, 7).toUpperCase();
+  console.log(`[${rid}] ⚡ INCOMING: Resend Invoice for ${req.body.orderId}`);
+  console.time(`[${rid}] TRACE`);
+
   try {
     const { orderId, overrideEmail } = req.body;
     let order;
     const sanitizedOrderId = (orderId || '').toString().trim().replace(/^#/, '');
 
-    console.log('Processing orderId:', sanitizedOrderId, 'overrideEmail:', overrideEmail);
-
+    console.time(`[${rid}] MD_FIND`);
     if (!mongoose.Types.ObjectId.isValid(sanitizedOrderId)) {
-       console.log(`[SANDBOX] Generating Mock PDF for Dummy ID: ${sanitizedOrderId}`);
+       console.log(`[${rid}] Sandbox Mode Detected`);
        order = {
          _id: sanitizedOrderId || 'sandbox-'+Date.now(),
          createdAt: new Date(),
          totalAmount: 9999, 
          customerDetails: {
            name: 'Sandbox Tester',
-           email: overrideEmail || 'vivek@example.com', // Prefer override
+           email: overrideEmail || 'vivek@example.com',
            phone: '0000000000',
-           address: 'FASHION TEST HUB, SMARTON'
+           address: 'LIVE TEST LOCATION, SMARTON'
          },
          items: [{ name: 'MOCK LUXURY ITEM', quantity: 1, price: 9999 }]
        };
     } else {
-       order = await Order.findById(orderId);
-       // Allow overriding email even for real orders
+       order = await Order.findById(sanitizedOrderId);
        if (order && overrideEmail) order.customerDetails.email = overrideEmail;
     }
+    console.timeEnd(`[${rid}] MD_FIND`);
 
-    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (!order) {
+      console.timeEnd(`[${rid}] TRACE`);
+      return res.status(404).json({ error: 'Order signal not found in database registry.' });
+    }
 
-    // Fire and forget email
-    sendOrderConfirmation(order).catch(e => console.error(e));
+    // 🔥 PURE FIRE-AND-FORGET
+    console.log(`[${rid}] Queuing email background task...`);
+    sendOrderConfirmation(order); // Non-blocking
     
-    res.json({ success: true, message: `Digital Invoice queued for ${overrideEmail || order.customerDetails?.email}` });
+    console.timeEnd(`[${rid}] TRACE`);
+    return res.json({ 
+      success: true, 
+      message: `Atelier Hub: Digital Invoice queued for ${overrideEmail || order.customerDetails?.email}`,
+      traceId: rid 
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.timeEnd(`[${rid}] TRACE`);
+    console.error(`[${rid}] Hub Exception:`, err.message);
+    res.status(500).json({ success: false, error: 'Hub transmission failure: ' + err.message });
   }
 });
 
@@ -263,6 +294,19 @@ orderRouter.put('/:id/status', async (req, res) => {
     res.json({ success: true, message: `Order Protocol Updated: ${status}` });
   } catch (error) {
     res.status(500).json({ error: 'Backend Transmission Failed' });
+  }
+});
+
+// Admin: Toggle Archive Signal
+orderRouter.put('/:id/archive', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order Signal Missing' });
+    order.isArchived = !order.isArchived;
+    await order.save();
+    res.json({ success: true, isArchived: order.isArchived });
+  } catch (error) {
+    res.status(500).json({ error: 'Archive Logic Failure' });
   }
 });
 

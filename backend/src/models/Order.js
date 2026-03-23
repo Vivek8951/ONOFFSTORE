@@ -12,7 +12,8 @@ const OrderSchema = new mongoose.Schema({
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     name: String,
     quantity: { type: Number, required: true },
-    price: { type: Number, required: true }
+    price: { type: Number, required: true },
+    size: { type: String, default: 'M' }
   }],
   totalAmount: { type: Number, required: true },
   paymentDetails: {
@@ -24,7 +25,8 @@ const OrderSchema = new mongoose.Schema({
   shippingDetails: {
     courier: String,
     trackingId: String
-  }
+  },
+  isArchived: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', OrderSchema);

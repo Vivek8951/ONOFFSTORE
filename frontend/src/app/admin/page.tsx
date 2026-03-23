@@ -18,6 +18,7 @@ export interface Order {
   trackingId?: string;
   courier?: string;
   address?: string;
+  isArchived?: boolean;
   customerDetails?: { name: string; email: string; phone: string; address: string; };
 }
 
@@ -86,7 +87,8 @@ export default function AdminDashboard() {
         date: new Date(o.createdAt).toLocaleString(),
         customerDetails: o.customerDetails,
         courier: o.shippingDetails?.courier || '',
-        trackingId: o.shippingDetails?.trackingId || ''
+        trackingId: o.shippingDetails?.trackingId || '',
+        isArchived: o.isArchived || false
       })));
 
       const pData = await fetchJson(`${API_URL}/api/products`);
@@ -212,15 +214,13 @@ export default function AdminDashboard() {
       });
 
       const json = await res.json();
-
       if (res.ok) {
         setNotifications([`Premium Bill queued for ${payload.overrideEmail}`, ...notifications]);
-        alert(`Invoice queued: ${json.message || 'Success'}`);
       } else {
-        alert(`Email error (${res.status}): ${json.error || 'SMTP/Server issue'}`);
+        setNotifications([`Email error (${res.status}): ${json.error || 'SMTP/Server issue'}`, ...notifications]);
       }
     } catch (err: any) {
-      alert(`Protocol Failure: ${err?.message || err}`);
+      setNotifications([`Protocol Failure: ${err?.message || err}`, ...notifications]);
     } finally {
       setSendingInvoiceId(null);
     }
@@ -243,6 +243,13 @@ export default function AdminDashboard() {
       }
     } catch (err) { alert('Sync failure: Could not reach backend.'); }
     finally { setIsRefreshing(false); }
+  };
+
+  const handleToggleArchive = async (id: string) => {
+    try {
+      await fetch(`${API_URL}/api/orders/${id}/archive`, { method: 'PUT' });
+      fetchArchive();
+    } catch (err) { alert('Archive sync hub failure'); }
   };
 
   const handleToggleDiscount = (code: string) => {
@@ -569,7 +576,9 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => (
+                  {orders
+                    .filter(o => !o.isArchived)
+                    .map((order) => (
                     <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="p-5 font-serif font-semibold text-sm">{order.id}</td>
                       <td className="p-5">
@@ -600,6 +609,12 @@ export default function AdminDashboard() {
                               className="bg-[var(--indian-maroon)] text-white px-4 py-2 text-[10px] font-serif font-semibold uppercase tracking-widest hover:bg-[var(--indian-gold)] transition-colors rounded"
                             >
                               Process
+                            </button>
+                            <button 
+                              onClick={() => handleToggleArchive(order._id!)}
+                              className="bg-gray-50 text-gray-400 px-4 py-2 text-[10px] font-serif font-semibold uppercase tracking-widest hover:bg-gray-100 transition-colors rounded"
+                            >
+                              {order.isArchived ? 'Restore' : 'Archive'}
                             </button>
                             <button 
                               onClick={() => {

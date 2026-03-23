@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../config/api';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -21,6 +22,10 @@ export default function Navbar() {
     };
     updateCount();
     window.addEventListener('storage', updateCount);
+
+    // Warm up Render Backend (Cold-Start Prevention)
+    fetch(`${getApiUrl()}/api/products`).catch(() => {});
+
     return () => window.removeEventListener('storage', updateCount);
   }, []);
 

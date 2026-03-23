@@ -12,8 +12,19 @@ export default function Checkout() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '' });
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStep, setProcessingStep] = useState('Atelier Protocol Initiated');
   const [orderPlaced, setOrderPlaced] = useState<any>(null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (isProcessing) {
+      const t1 = setTimeout(() => setProcessingStep('Syncing with Mumbai Hub...'), 3500);
+      const t2 = setTimeout(() => setProcessingStep('Waiting for Atelier Cloud (10s)...'), 8000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    } else {
+      setProcessingStep('Atelier Protocol Initiated');
+    }
+  }, [isProcessing]);
 
   // Load cart from localStorage
   useEffect(() => {
@@ -67,30 +78,28 @@ export default function Checkout() {
         totalAmount,
       };
 
+      console.log(`[ATELIER HUB] Dispatching Order to: ${API_URL}/api/orders/create`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for cold-start tolerance
+
       const res = await fetch(`${API_URL}/api/orders/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } 
+      catch (e) { throw new Error('Atelier Hub did not return a valid server signal. Please wait 30 seconds for the hub to warm up.'); }
 
-      if (!res.ok) throw new Error(data.error || 'Order creation failed');
+      if (!res.ok) throw new Error(data.error || 'Atelier Protocol Rejected Order.');
 
-      // Save phone so My Orders can look up their orders
+      // 2. Success Immediately!
       localStorage.setItem('userPhone', form.phone);
-
-      // Mark payment as verified (demo — in production Razorpay webhook does this)
-      await fetch(`${API_URL}/api/orders/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          razorpay_order_id: data.razorpayOrder?.id || 'demo_' + Date.now(),
-          razorpay_payment_id: 'pay_demo_' + Date.now(),
-        }),
-      });
-
-      // Clear cart
       localStorage.removeItem('onoff_cart');
       setCartItems([]);
 
@@ -101,8 +110,24 @@ export default function Checkout() {
         total: `₹${totalAmount.toLocaleString()}`,
       });
 
+      // 3. Optional Background Signal (Don't await this)
+      console.log('[ATELIER HUB] Finalizing signal in background...');
+      fetch(`${API_URL}/api/orders/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          razorpay_order_id: data.razorpayOrder?.id || 'demo_' + Date.now(),
+          razorpay_payment_id: 'pay_demo_' + Date.now(),
+        }),
+      }).catch(() => {});
+
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.');
+      if (err.name === 'AbortError') {
+        setError('Atelier Hub is taking longer than expected to respond (Cold Start). Please wait 10 seconds and try again.');
+      } else {
+        setError(err.message || 'Signal Break: Connection to Atelier Hub failed.');
+      }
+      console.error('[ATELIER HUB] Exception:', err);
     } finally {
       setIsProcessing(false);
     }
@@ -200,8 +225,14 @@ export default function Checkout() {
                 className="w-full bg-[var(--indian-maroon)] text-[var(--indian-gold)] font-serif font-semibold text-xs py-5 uppercase tracking-[0.2em] hover:bg-[var(--indian-gold)] hover:text-white transition-all rounded-sm disabled:opacity-60 flex items-center justify-center gap-3 shadow-md"
               >
                 {isProcessing ? (
-                  <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing Order...</>
-                ) : `Place Order — ₹${totalAmount.toLocaleString()}`}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex items-center gap-3">
+                      <span className="w-4 h-4 border-2 border-[var(--indian-gold)] border-t-transparent rounded-full animate-spin" />
+                      <span>{processingStep}</span>
+                    </div>
+                    <span className="text-[8px] opacity-60 normal-case font-sans tracking-normal">Render Free Tier Cold-Start Tolerance Active</span>
+                  </div>
+                ) : `Finalize Order — ₹${totalAmount.toLocaleString()}`}
               </button>
             </div>
 
