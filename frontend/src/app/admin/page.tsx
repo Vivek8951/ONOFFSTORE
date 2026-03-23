@@ -263,6 +263,18 @@ export default function AdminPage() {
            </div>
         )}
       </main>
+
+      {/* ADMIN BOTTOM COMMAND BAR (MOBILE) */}
+      <nav className="md:hidden fixed bottom-8 left-6 right-6 glass-midnight rounded-full border border-white/10 p-4 flex justify-around items-center shadow-2xl z-[200]">
+         <button onClick={() => setActiveTab('inventory')} className={`flex flex-col items-center gap-1 p-3 rounded-full transition-all ${activeTab === 'inventory' ? 'bg-[var(--indian-gold)] text-[var(--indian-midnight)] scale-110 shadow-lg' : 'text-white/40'}`}>
+            <span className="text-xl leading-none">📦</span>
+            <span className="text-[7px] font-bold uppercase tracking-widest">Vault</span>
+         </button>
+         <button onClick={() => setActiveTab('orders')} className={`flex flex-col items-center gap-1 p-3 rounded-full transition-all ${activeTab === 'orders' ? 'bg-[var(--indian-gold)] text-[var(--indian-midnight)] scale-110 shadow-lg' : 'text-white/40'}`}>
+            <span className="text-xl leading-none">⚡</span>
+            <span className="text-[7px] font-bold uppercase tracking-widest">Orders</span>
+         </button>
+      </nav>
     </div>
   );
 }
