@@ -399,11 +399,32 @@ export default function AdminDashboard() {
 
       {/* Overlay for mobile */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/50 z-[90] md:hidden" onClick={() => setMobileMenuOpen(false)} />
+        <div className="fixed inset-0 bg-black/50 z-[90] md:hidden backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
       )}
 
+      {/* ADMIN BOTTOM DOCK: MOBILE ONLY */}
+      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[105] w-[94%] max-w-sm">
+        <div className="bg-[#1a1a1a]/90 backdrop-blur-3xl border border-white/5 rounded-2xl px-6 py-3 flex items-center justify-between shadow-2xl ring-1 ring-white/10">
+          {[
+            { id: 'inventory', label: 'Vault', icon: '📦' },
+            { id: 'orders', label: 'Live', icon: '⚡' },
+            { id: 'discounts', label: 'Codes', icon: '🎟️' },
+            { id: 'banners', label: 'Design', icon: '🖼️' }
+          ].map(tab => (
+            <button 
+              key={tab.id} 
+              onClick={() => setActiveTab(tab.id)} 
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--indian-gold)] text-[var(--indian-maroon)] shadow-lg scale-105' : 'text-white/40'}`}
+            >
+              <span className="text-xl leading-none">{tab.icon}</span>
+              <span className="text-[8px] font-sans uppercase tracking-widest font-bold">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* MAIN CONTENT */}
-      <main className="flex-1 p-6 md:p-12 overflow-y-auto">
+      <main className="flex-1 p-6 md:p-12 overflow-y-auto pb-32 md:pb-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
               <span className="text-[10px] font-serif font-semibold uppercase text-gray-400">Total Revenue</span>

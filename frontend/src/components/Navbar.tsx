@@ -102,6 +102,29 @@ export default function Navbar() {
         <div className="mt-12 w-20 h-[1px] bg-[var(--indian-gold)]/30"></div>
         <p className="text-[10px] font-sans uppercase tracking-[0.4em] text-gray-400">SMARTON BY ONOFF</p>
       </div>
+
+      {/* LUXURY BOTTOM DOCK: MOBILE ONLY */}
+      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] w-[90%] max-w-md">
+        <div className="bg-[var(--indian-maroon)]/90 backdrop-blur-3xl border border-white/10 rounded-full px-8 py-4 flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-b-2 border-b-[var(--indian-gold)]/40 overflow-hidden ring-1 ring-white/5">
+          <Link href="/shop" className={`flex flex-col items-center gap-1 ${pathname === '/shop' ? 'text-[var(--indian-gold)]' : 'text-white/60'}`}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          </Link>
+
+          <Link href="/my-orders" className={`flex flex-col items-center gap-1 ${pathname === '/my-orders' ? 'text-[var(--indian-gold)]' : 'text-white/60'}`}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+          </Link>
+
+          <Link href="/cart" className={`relative flex flex-col items-center gap-1 ${pathname === '/cart' ? 'text-[var(--indian-gold)]' : 'text-white/60'}`}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+            {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-[var(--indian-gold)] text-[var(--indian-maroon)] text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-[var(--indian-maroon)]">{cartCount}</span>}
+          </Link>
+
+          <Link href="/admin" className={`flex flex-col items-center gap-1 ${pathname === '/admin' ? 'text-[var(--indian-gold)]' : 'text-white/60'}`}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path><path d="M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
+          </Link>
+        </div>
+      </div>
     </div>
+
   );
 }
