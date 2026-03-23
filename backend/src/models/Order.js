@@ -26,7 +26,8 @@ const OrderSchema = new mongoose.Schema({
     courier: String,
     trackingId: String
   },
-  isArchived: { type: Boolean, default: false }
+  isArchived: { type: Boolean, default: false },
+  systemLogs: [{ type: String }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', OrderSchema);

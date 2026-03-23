@@ -19,6 +19,7 @@ export interface Order {
   courier?: string;
   address?: string;
   isArchived?: boolean;
+  systemLogs?: string[];
   customerDetails?: { name: string; email: string; phone: string; address: string; };
 }
 
@@ -88,7 +89,8 @@ export default function AdminDashboard() {
         customerDetails: o.customerDetails,
         courier: o.shippingDetails?.courier || '',
         trackingId: o.shippingDetails?.trackingId || '',
-        isArchived: o.isArchived || false
+        isArchived: o.isArchived || false,
+        systemLogs: o.systemLogs || []
       })));
 
       const pData = await fetchJson(`${API_URL}/api/products`);
@@ -587,6 +589,15 @@ export default function AdminDashboard() {
                       </td>
                       <td className="p-5 text-sm font-medium text-gray-700">
                         {order.item} <span className="inline-block ml-2 text-[10px] bg-gray-200 px-2 py-0.5 rounded font-bold uppercase">{order.size}</span>
+                        {order.systemLogs && order.systemLogs.length > 0 && (
+                          <div className="mt-2 flex flex-col gap-1">
+                            {order.systemLogs.slice(-2).map((log: string, idx: number) => (
+                              <span key={idx} className={`text-[8px] font-sans uppercase tracking-tighter ${log.includes('ERROR') ? 'text-red-500 font-bold' : 'text-green-600 opacity-60'}`}>
+                                {log.includes('ERROR') ? '⚠️' : '✓'} {log}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="p-5 font-bold font-serif">{order.total}</td>
                       <td className="p-5">

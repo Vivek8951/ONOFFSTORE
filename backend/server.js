@@ -115,8 +115,10 @@ const sendOrderConfirmation = (order) => {
 
       await transporter.sendMail(mailOptions);
       console.log('[ORDER SIGNAL] Digital Bill successfully dispatched.');
+      await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `SECURE DISPATCHED: ${new Date().toLocaleTimeString()}` } });
     } catch (err) {
       console.error('[ORDER SIGNAL] Background Transmission Failed:', err.message);
+      await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `DISPATCH ERROR: ${err.message}` } });
     }
   });
 };
@@ -178,7 +180,7 @@ orderRouter.post('/create', async (req, res) => {
       newOrder.orderStatus = 'Pending'; // Admin still needs to accept
       await newOrder.save();
       // Send confirmation email background
-      sendOrderConfirmation(newOrder).catch(e => console.warn('Email skipped:', e.message));
+      sendOrderConfirmation(newOrder);
     }
 
     res.json({ success: true, dbOrderId: newOrder._id, razorpayOrder: rzpOrder });
@@ -210,7 +212,7 @@ orderRouter.post('/verify', async (req, res) => {
     await order.save();
 
     // 📧 Trigger Order Confirmation Email (Real-time background)
-    sendOrderConfirmation(order).catch(e => console.error(e));
+    sendOrderConfirmation(order);
 
     res.json({ success: true, message: 'Payment verified and order confirmed!' });
   } catch (err) {
