@@ -32,7 +32,7 @@ export default function MyOrders() {
     try {
       // Fetch ALL orders and filter by phone on client side
       // (since backend doesn't have phone-filtered endpoint yet)
-      const res = await fetch(`${API_URL}/api/orders/admin/all`);
+      const res = await fetch(`${API_URL}/api/orders/admin/all`, { cache: 'no-store' });
       const data = await res.json();
       const mine = data.filter((o: any) =>
         o.customerDetails?.phone === ph ||

@@ -12,6 +12,7 @@ const CATEGORIES = ['All', 'Apparel', 'Cargo', 'Accessories'];
 export default function ShopPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [sort, setSort] = useState('newest');
   const [isLoading, setIsLoading] = useState(true);
@@ -19,19 +20,26 @@ export default function ShopPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/products`, { cache: 'no-store' });
-        const data = await res.json();
-        setProducts(data);
-        setFiltered(data);
+        const [prodRes, banRes] = await Promise.all([
+          fetch(`${API_URL}/api/products`, { cache: 'no-store' }),
+          fetch(`${API_URL}/api/banners/admin/all`, { cache: 'no-store' })
+        ]);
+        
+        const products = await prodRes.json();
+        const banners = await banRes.json();
+        
+        setProducts(products);
+        setFiltered(products);
+        setBanners(banners.filter((b: any) => b.active));
       } catch (e) {
         console.error(e);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchProducts();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -59,11 +67,26 @@ export default function ShopPage() {
     <div className="min-h-screen bg-[var(--indian-cream)] text-gray-900 font-sans selection:bg-[var(--indian-gold)] selection:text-white overflow-x-hidden">
       <Navbar />
 
+      {/* Hero Banners */}
+      {banners.length > 0 && (
+        <section className="relative h-[60vh] md:h-[80vh] w-full overflow-hidden mt-20">
+          {banners.map((banner, idx) => (
+            <div key={banner._id} className="absolute inset-0 transition-opacity duration-1000">
+               <img src={banner.image} className="w-full h-full object-cover" />
+               <div className="absolute inset-0 bg-black/30 flex flex-col justify-center px-6 md:px-20 text-white translate-y-20">
+                  <h2 className="text-4xl md:text-8xl font-serif font-bold italic tracking-tighter mb-6">{banner.title}</h2>
+                  <Link href={banner.linkProductId ? `/product/${banner.linkProductId}` : '/shop'} className="bg-[var(--indian-gold)] text-[var(--indian-midnight)] px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-[0.4em] hover:bg-white transition-all w-fit">Discover Drop</Link>
+               </div>
+            </div>
+          ))}
+        </section>
+      )}
+
       {/* Elite Shop Header */}
-      <section className="pt-40 md:pt-52 pb-20 px-6 md:px-12 max-w-7xl mx-auto text-center animate-fade-in-up">
+      <section className={`${banners.length > 0 ? 'pt-20' : 'pt-40 md:pt-52'} pb-20 px-6 md:px-12 max-w-7xl mx-auto text-center animate-fade-in-up`}>
         <h2 className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.8em] text-[var(--indian-maroon)] mb-6 opacity-60">The 2024 Collection Archive</h2>
         <h1 className="text-5xl md:text-9xl font-serif font-bold italic tracking-tighter mb-16 leading-none">
-          THE <span className="text-[var(--indian-gold)] gold-glow">ATELIER</span>
+          THE <span className="text-[var(--indian-gold)] gold-glow uppercase">ATELIER</span>
         </h1>
         
         {/* Luxury Search Dock */}
@@ -115,7 +138,7 @@ export default function ShopPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24">
             {[1,2,3,4,5,6].map(i => (
-              <div key={i} className="aspect-[4/5] bg-gray-50 rounded-[40px] shimmer-bg"></div>
+              <div key={i} className="aspect-[4/5] bg-gray-50 rounded-[40px] shadow-sm animate-pulse"></div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -123,11 +146,11 @@ export default function ShopPage() {
             <div className="w-24 h-24 bg-[var(--indian-gold)]/10 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--indian-gold)] gold-glow"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </div>
-            <h2 className="text-3xl font-serif font-bold mb-6">The Archive is Silent</h2>
-            <p className="text-sm text-gray-400 mb-12 max-w-md mx-auto italic font-medium">We couldn't locate any matching pieces. The Atelier Hub might be taking a moment to breathe.</p>
+            <h2 className="text-3xl font-serif font-bold mb-6 text-[var(--indian-midnight)]">The Archive is Silent</h2>
+            <p className="text-sm text-gray-400 mb-12 max-w-md mx-auto italic font-medium font-sans uppercase tracking-[0.2em]">We couldn't locate any matching pieces. The Atelier Hub might be taking a moment to breathe.</p>
             <button 
               onClick={() => { setSearchTerm(''); setActiveCategory('All'); }}
-              className="bg-[var(--indian-maroon)] text-[var(--indian-gold)] px-12 py-6 rounded-full text-[11px] font-bold uppercase tracking-[0.4em] hover:bg-[var(--indian-gold)] hover:text-white transition-all shadow-2xl active:scale-95"
+              className="bg-[var(--indian-maroon)] text-[var(--indian-gold)] px-12 py-6 rounded-full text-[11px] font-bold uppercase tracking-[0.4em] hover:bg-white hover:text-[var(--indian-maroon)] transition-all shadow-2xl active:scale-95"
             >
               Reset Atelier Hub
             </button>

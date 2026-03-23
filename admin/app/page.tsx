@@ -12,7 +12,9 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('inventory');
   const [inventory, setInventory] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [isAddingBanner, setIsAddingBanner] = useState(false);
   const [isReady, setIsReady] = useState(false);
   
   const [newProduct, setNewProduct] = useState({
@@ -20,10 +22,12 @@ export default function AdminDashboard() {
     price: '',
     stock: 0,
     image: '',
-    sizes: ['M'],
+    sizes: ['M'] as string[],
     category: 'Fusion',
     description: ''
   });
+
+  const [newBanner, setNewBanner] = useState({ title: '', image: '', linkProductId: '', active: true });
 
   const fetchArchive = async () => {
     try {
@@ -52,6 +56,10 @@ export default function AdminDashboard() {
         date: new Date(o.createdAt).toLocaleString(),
         customerDetails: o.customerDetails
       })));
+
+      const bRes = await fetch(`${API_URL}/api/banners/admin/all`, { cache: 'no-store' });
+      const bData = await bRes.json();
+      setBanners(bData);
     } catch (err: any) {
       console.error('Atelier Sync Failed:', err.message);
     } finally {
@@ -87,6 +95,30 @@ export default function AdminDashboard() {
         setNewProduct({ name: '', price: '', stock: 0, image: '', sizes: ['M'], category: 'Fusion', description: '' });
       }
     } catch (err) { alert('Failed to Publish Piece'); }
+  };
+
+  const handleSaveBanner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_URL}/api/banners`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBanner)
+      });
+      if (res.ok) {
+        setIsAddingBanner(false);
+        fetchArchive();
+        setNewBanner({ title: '', image: '', linkProductId: '', active: true });
+      }
+    } catch (err) { alert('Failed to Publish Banner'); }
+  };
+
+  const handleDeleteBanner = async (id: string) => {
+    if (!confirm('Abort this banner?')) return;
+    try {
+      await fetch(`${API_URL}/api/banners/${id}`, { method: 'DELETE' });
+      fetchArchive();
+    } catch (err) { alert('Delete Failure'); }
   };
 
   if (!isAuthenticated) {
@@ -140,8 +172,15 @@ export default function AdminDashboard() {
             <h1 className="text-5xl md:text-8xl font-serif font-bold italic tracking-tighter leading-none">THE <span className="text-[#800000] gold-glow">HUB</span></h1>
          </div>
          <div className="hidden md:flex gap-4">
-            <button onClick={() => setActiveTab('inventory')} className={`px-10 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${activeTab === 'inventory' ? 'bg-[#800000] text-[#d4af37] shadow-xl' : 'bg-white text-gray-400 border'}`}>Vault</button>
-            <button onClick={() => setActiveTab('orders')} className={`px-10 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${activeTab === 'orders' ? 'bg-[#800000] text-[#d4af37] shadow-xl' : 'bg-white text-gray-400 border'}`}>Orders</button>
+            {['inventory', 'orders', 'banners'].map(tab => (
+               <button 
+                  key={tab}
+                  onClick={() => setActiveTab(tab)} 
+                  className={`px-10 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${activeTab === tab ? 'bg-[#800000] text-[#d4af37] shadow-xl' : 'bg-white text-gray-400 border'}`}
+               >
+                  {tab}
+               </button>
+            ))}
          </div>
       </header>
 
@@ -149,7 +188,7 @@ export default function AdminDashboard() {
         {activeTab === 'inventory' && (
            <div className="animate-fade-in-up">
               <div className="flex items-center justify-between mb-12">
-                 <h2 className="text-3xl font-serif font-bold uppercase italic">Manage Pieces</h2>
+                 <h2 className="text-3xl font-serif font-bold uppercase italic">Manage Archive</h2>
                  <button onClick={() => setIsAddingProduct(!isAddingProduct)} className="bg-[#0a0a0b] text-white px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#d4af37] transition-all shadow-xl">
                    {isAddingProduct ? 'Cancel' : '+ New commission'}
                  </button>
@@ -161,11 +200,10 @@ export default function AdminDashboard() {
                        <input type="text" placeholder="Piece Name" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[#d4af37] transition-all" required />
                        <input type="text" placeholder="Price (₹)" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[#d4af37] transition-all" required />
                        <input type="number" placeholder="Stock Level" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[#d4af37] transition-all" required />
-                       
                        <div className="pt-4">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Available Sizes</p>
                           <div className="flex gap-2">
-                             {['S', 'M', 'L', 'XL', 'XXL'].map(sz => (
+                             {AVAILABLE_SIZES.map(sz => (
                                 <button key={sz} type="button" onClick={() => {
                                    const newSizes = newProduct.sizes.includes(sz) ? newProduct.sizes.filter(s => s !== sz) : [...newProduct.sizes, sz];
                                    setNewProduct({...newProduct, sizes: newSizes});
@@ -224,18 +262,56 @@ export default function AdminDashboard() {
               </div>
            </div>
         )}
+
+        {activeTab === 'banners' && (
+           <div className="animate-fade-in-up">
+              <div className="flex items-center justify-between mb-12">
+                 <h2 className="text-3xl font-serif font-bold uppercase italic">Hero Displays</h2>
+                 <button onClick={() => setIsAddingBanner(!isAddingBanner)} className="bg-[#0a0a0b] text-white px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#d4af37] transition-all shadow-xl">
+                   {isAddingBanner ? 'Cancel' : '+ New Display Drop'}
+                 </button>
+              </div>
+
+              {isAddingBanner && (
+                 <form onSubmit={handleSaveBanner} className="bg-white p-12 rounded-[50px] border-2 border-[#d4af37]/20 shadow-2xl mb-20 grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="space-y-8">
+                       <input type="text" placeholder="Banner Title" value={newBanner.title} onChange={e => setNewBanner({...newBanner, title: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[#d4af37] transition-all" required />
+                       <input type="text" placeholder="Main Visual URL" value={newBanner.image} onChange={e => setNewBanner({...newBanner, image: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-sm font-bold italic outline-none focus:border-[#d4af37]" required />
+                    </div>
+                    <div className="flex flex-col justify-end">
+                       <button type="submit" className="w-full bg-[#800000] text-[#d4af37] py-6 rounded-full font-bold uppercase text-[10px] tracking-[0.4em] hover:bg-[#d4af37] hover:text-white transition-all shadow-xl">Activate Display</button>
+                    </div>
+                 </form>
+              )}
+
+              <div className="grid grid-cols-1 gap-12">
+                 {banners.map(banner => (
+                    <div key={banner._id} className="bg-white rounded-[50px] overflow-hidden relative h-[400px] border border-gray-100">
+                       <img src={banner.image} className="w-full h-full object-cover" />
+                       <div className="absolute inset-0 bg-black/40 flex flex-col justify-center p-12 text-white">
+                          <h3 className="text-4xl md:text-6xl font-serif font-bold italic tracking-tighter mb-8">{banner.title}</h3>
+                          <div className="flex gap-4">
+                             <button onClick={() => handleDeleteBanner(banner._id)} className="px-10 py-4 bg-red-600/80 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-white hover:text-red-600 transition-all">Abort Display</button>
+                          </div>
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        )}
       </main>
 
       {/* ELITE BOTTOM COMMAND BAR (MOBILE) */}
       <nav className="md:hidden fixed bottom-8 left-6 right-6 bg-[#0a0a0b]/90 backdrop-blur-3xl rounded-full border border-white/10 p-4 flex justify-around items-center shadow-2xl z-[200]">
-         <button onClick={() => setActiveTab('inventory')} className={`flex flex-col items-center gap-1 p-3 rounded-full transition-all ${activeTab === 'inventory' ? 'bg-[#d4af37] text-[#0a0a0b] scale-110 shadow-lg' : 'text-white/40'}`}>
-            <span className="text-xl leading-none">📦</span>
-            <span className="text-[7px] font-bold uppercase tracking-widest">Vault</span>
-         </button>
-         <button onClick={() => setActiveTab('orders')} className={`flex flex-col items-center gap-1 p-3 rounded-full transition-all ${activeTab === 'orders' ? 'bg-[#d4af37] text-[#0a0a0b] scale-110 shadow-lg' : 'text-white/40'}`}>
-            <span className="text-xl leading-none">⚡</span>
-            <span className="text-[7px] font-bold uppercase tracking-widest">Feed</span>
-         </button>
+         {['inventory', 'orders', 'banners'].map(tab => (
+            <button 
+               key={tab}
+               onClick={() => setActiveTab(tab)} 
+               className={`flex flex-col items-center gap-1 p-3 rounded-full transition-all ${activeTab === tab ? 'bg-[#d4af37] text-[#0a0a0b] scale-110 shadow-lg' : 'text-white/40'}`}
+            >
+               <span className="text-[7px] font-bold uppercase tracking-widest">{tab.slice(0,4)}</span>
+            </button>
+         ))}
       </nav>
     </div>
   );
