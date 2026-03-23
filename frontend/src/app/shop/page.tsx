@@ -17,6 +17,7 @@ export default function ShopPage() {
   const [sort, setSort] = useState('newest');
   const [isLoading, setIsLoading] = useState(true);
   const [wishlist, setWishlist] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -39,11 +40,14 @@ export default function ShopPage() {
     if (activeCategory !== 'All') {
       list = list.filter(p => p.category?.toLowerCase() === activeCategory.toLowerCase());
     }
+    if (searchTerm) {
+      list = list.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
     if (sort === 'price-asc') list.sort((a, b) => Number(a.price) - Number(b.price));
     else if (sort === 'price-desc') list.sort((a, b) => Number(b.price) - Number(a.price));
     else list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     setFiltered(list);
-  }, [products, activeCategory, sort]);
+  }, [products, activeCategory, sort, searchTerm]);
 
   const toggleWishlist = (id: string) => {
     setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -61,21 +65,35 @@ export default function ShopPage() {
             <div>
               <h1 className="text-4xl md:text-7xl font-serif font-semibold uppercase italic tracking-tighter leading-none">
                 Shop All
-                <span className="text-[var(--indian-gold)]">.</span>
               </h1>
               <p className="text-sm text-gray-400 mt-3 font-medium">{filtered.length} items available</p>
             </div>
 
-            {/* Sort */}
-            <select
-              value={sort}
-              onChange={e => setSort(e.target.value)}
-              className="border border-gray-200 rounded-xl px-4 py-3 text-xs font-serif font-semibold uppercase tracking-widest outline-none focus:border-[var(--indian-maroon)] appearance-none cursor-pointer bg-white text-[var(--indian-maroon)]"
-            >
-              <option value="newest">Newest First</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-            </select>
+            {/* Actions: Search & Sort */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-64 group">
+                <input 
+                  type="text" 
+                  placeholder="Search pieces..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-white border border-gray-100 px-5 py-3 rounded-xl text-xs font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all pr-12"
+                />
+                <svg className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[var(--indian-gold)] transition-colors" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </div>
+
+              {/* Sort */}
+              <select
+                value={sort}
+                onChange={e => setSort(e.target.value)}
+                className="w-full sm:w-auto border border-gray-100 rounded-xl px-5 py-3 text-xs font-serif font-semibold uppercase tracking-widest outline-none focus:border-[var(--indian-maroon)] appearance-none cursor-pointer bg-white text-[var(--indian-maroon)] shadow-sm"
+              >
+                <option value="newest">Newest First</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+              </select>
+            </div>
           </div>
 
           {/* Category Filter */}
@@ -100,20 +118,27 @@ export default function ShopPage() {
       {/* Product Grid */}
       <main className="max-w-7xl mx-auto px-6 md:px-16 py-16">
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-[3/4] bg-gray-100 rounded-2xl mb-4" />
-                <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
-                <div className="h-4 bg-gray-100 rounded w-1/2" />
+              <div key={i} className="flex flex-col gap-5">
+                <div className="aspect-[3/4] w-full bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded-2xl" />
+                <div className="space-y-3">
+                  <div className="h-4 w-3/4 bg-gray-100 rounded-full animate-pulse" />
+                  <div className="h-4 w-1/2 bg-gray-50 rounded-full animate-pulse" />
+                </div>
               </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-32 text-center border-2 border-dashed border-gray-100 rounded-3xl">
-            <p className="text-gray-400 font-serif font-semibold uppercase tracking-widest text-sm mb-6">No items in this category yet</p>
-            <button onClick={() => setActiveCategory('All')} className="bg-[var(--indian-maroon)] text-[var(--indian-gold)] px-8 py-3 font-serif font-semibold uppercase tracking-widest text-xs border border-[var(--indian-gold)] hover:bg-[var(--indian-gold)] hover:text-[#fff] transition-all">
-              View All
+          <div className="py-24 text-center bg-white/50 backdrop-blur-sm border border-white/20 rounded-[40px] shadow-sm">
+            <div className="text-4xl mb-6">🔍</div>
+            <p className="text-[var(--indian-maroon)] font-serif font-semibold italic text-xl mb-2">No pieces found</p>
+            <p className="text-gray-400 text-xs font-sans uppercase tracking-widest mb-8">Try adjusting your filters or search term</p>
+            <button 
+              onClick={() => { setActiveCategory('All'); setSearchTerm(''); }} 
+              className="bg-[var(--indian-maroon)] text-[var(--indian-gold)] px-10 py-4 font-serif font-semibold uppercase tracking-[0.2em] text-[10px] hover:bg-[var(--indian-gold)] hover:text-white transition-all rounded-full shadow-lg"
+            >
+              Reset Atelier
             </button>
           </div>
         ) : (

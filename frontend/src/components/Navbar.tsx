@@ -35,18 +35,14 @@ export default function Navbar() {
     <div className={`fixed top-4 md:top-8 left-1/2 -translate-x-1/2 z-[100] w-[96%] md:w-[92%] max-w-6xl transition-all duration-700 ${isLanding ? 'opacity-0 -translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
       <nav className="bg-white/80 backdrop-blur-2xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[20px] md:rounded-[30px] px-5 md:px-8 py-3 md:py-4 flex items-center justify-between">
         
-        {/* Left: Collections */}
-        <div className="flex items-center gap-10">
+        {/* Left: Collections (Hidden on Mobile) */}
+        <div className="flex items-center gap-10 hidden md:flex">
           <Link href="/shop" className="group relative flex flex-col items-center">
             <span className="text-[10px] font-serif font-semibold uppercase tracking-[0.3em] text-[var(--indian-maroon)]">Shop</span>
             <div className="h-[1px] w-0 bg-[var(--indian-gold)] group-hover:w-full transition-all duration-300"></div>
           </Link>
           <Link href="/my-orders" className="group relative flex flex-col items-center">
             <span className="text-[10px] font-serif font-semibold uppercase tracking-[0.3em] text-[var(--indian-maroon)]/50 group-hover:text-[var(--indian-maroon)] transition-colors">My Orders</span>
-            <div className="h-[1px] w-0 bg-[var(--indian-gold)] group-hover:w-full transition-all duration-300"></div>
-          </Link>
-          <Link href="/track" className="group relative flex flex-col items-center hidden md:flex">
-            <span className="text-[10px] font-serif font-semibold uppercase tracking-[0.3em] text-[var(--indian-maroon)]/50 group-hover:text-[var(--indian-maroon)] transition-colors">Track</span>
             <div className="h-[1px] w-0 bg-[var(--indian-gold)] group-hover:w-full transition-all duration-300"></div>
           </Link>
         </div>

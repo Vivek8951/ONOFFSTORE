@@ -8,8 +8,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const Razorpay = require('razorpay');
-const nodemailer = require('nodemailer');
-const { Resend } = require('resend');
+const { google } = require('googleapis');
+const dns = require('dns');
 
 // Route imports
 const productRoutes = require('./src/routes/productRoutes');
@@ -63,11 +63,19 @@ app.use('/api/banners', bannerRoutes);
 const { generateInvoicePDF } = require('./src/services/PDFService');
 const stream = require('stream');
 
-// 3.5. Digital Dispatch Hub (Resend API)
-// 💡 CLOUD-NATIVE: Using HTTP API instead of SMTP to bypass Render port blocks.
-const resend = new Resend(process.env.RESEND_API_KEY || 're_FnttV3RD_5qPELZ2AXQ87r4vA8CtBGysQ');
+// 3.5. Digital Dispatch Hub (Gmail API via HTTPS)
+// 💡 CLOUD-NATIVE: Using Google API (Port 443) to bypass Render port blocks.
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GMAIL_CLIENT_ID,
+  process.env.GMAIL_CLIENT_SECRET,
+  "https://developers.google.com/oauthplayground"
+);
 
-console.log('✅ ATELIER DISPATCH HUB READY (Resend API Initialized)');
+oauth2Client.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
+
+const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+console.log('✅ ATELIER DISPATCH HUB READY (Gmail API Initialized)');
 
 
 const sendOrderConfirmation = (order) => {
@@ -86,11 +94,23 @@ const sendOrderConfirmation = (order) => {
         pdfStream.on('error', reject);
       });
 
-      const { data, error } = await resend.emails.send({
-        from: 'SMARTON ATELIER <onboarding@resend.dev>', // 💡 TIP: Verify your domain in Resend for custom email
-        to: order.customerDetails?.email || 'vicvivek9@gmail.com',
-        subject: `Order Confirmed & Digital Bill: #${order._id.toString().slice(-6).toUpperCase()}`,
-        html: `
+      // Format the email for Gmail API (Base64 Encoded RFC822)
+      const subject = `Order Confirmed & Digital Bill: #${order._id.toString().slice(-6).toUpperCase()}`;
+      const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+      
+      const messageParts = [
+        `From: "SMARTON ATELIER" <${process.env.EMAIL_USER}>`,
+        `To: ${order.customerDetails?.email || 'vicvivek9@gmail.com'}`,
+        'Content-Type: multipart/mixed; boundary="foo_bar_baz"',
+        'MIME-Version: 1.0',
+        `Subject: ${utf8Subject}`,
+        '',
+        '--foo_bar_baz',
+        'Content-Type: text/html; charset="utf-8"',
+        'MIME-Version: 1.0',
+        'Content-Transfer-Encoding: 7bit',
+        '',
+        `
           <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px; border-radius: 10px; background: #fff;">
             <h1 style="text-transform: uppercase; letter-spacing: 5px; text-align: center; color: #000;">SMARTON</h1>
             <p style="text-align: center; font-size: 10px; tracking: 2px; color: #888;">BY ONOFF STORE</p>
@@ -109,29 +129,42 @@ const sendOrderConfirmation = (order) => {
             <p style="font-size: 10px; color: #aaa; text-align: center; text-transform: uppercase; letter-spacing: 2px;">© ${new Date().getFullYear()} SMARTON WORLDWIDE • ATELIER DISPATCH</p>
           </div>
         `,
-        attachments: [
-          {
-            filename: fileName,
-            content: pdfBuffer,
-          },
-        ],
+        '',
+        '--foo_bar_baz',
+        `Content-Type: application/pdf; name="${fileName}"`,
+        'Content-Description: Invoice PDF',
+        `Content-Disposition: attachment; filename="${fileName}"`,
+        'Content-Transfer-Encoding: base64',
+        '',
+        pdfBuffer.toString('base64'),
+        '--foo_bar_baz--',
+      ];
+
+      const rawMessage = messageParts.join('\n');
+      const encodedMessage = Buffer.from(rawMessage)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw: encodedMessage },
       });
 
-      if (error) throw error;
-
-      console.log('[ORDER SIGNAL] Digital Bill successfully dispatched via Resend API.');
-      await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `SECURE DISPATCHED: ${new Date().toLocaleTimeString()} (API)` } });
+      console.log('[ORDER SIGNAL] Digital Bill successfully dispatched via Gmail API.');
+      await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `SECURE DISPATCHED: ${new Date().toLocaleTimeString()} (GMAIL-API)` } });
     } catch (err) {
-      console.error('[ORDER SIGNAL] API Transmission Failed:', err.message);
+      console.error('[ORDER SIGNAL] Gmail API Transmission Failed:', err.message);
       
-      // Detailed logging for the Admin to see
       let errorMsg = err.message;
-      if (err.message.includes('authorized')) {
-        errorMsg = "RESEND: Verify your domain/email in Resend Dashboard to send to customers.";
+      if (err.message.includes('refresh_token')) {
+        errorMsg = "GMAIL API: Tokens expired. Please regenerate your Refresh Token.";
       }
       
       await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `API ERROR: ${errorMsg}` } });
     }
+
   });
 };
 
