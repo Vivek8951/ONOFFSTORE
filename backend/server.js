@@ -64,19 +64,26 @@ const stream = require('stream');
 // 3.5. Email Service Setup (Nodemailer)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, 
-  // 🛰️ ATELIER SAFETY: Force IPv4 (family 4) to bypass cloud IPv6 blocks
+  port: 587,
+  secure: false, // Port 587 requires STARTTLS (secure: false)
+  requireTLS: true,
   family: 4, 
   auth: { 
     user: process.env.EMAIL_USER, 
-    // 💡 AUTO-CLEAN: Removes any spaces from the 16-digit App Password automatically
     pass: (process.env.EMAIL_PASS || '').replace(/\s/g, '') 
   },
-  // 🛰️ ATELIER SAFETY: Prevent SMTP stalls in production
-  connectionTimeout: 5000,
+  connectionTimeout: 10000, // Shorter timeout for faster feedback
   greetingTimeout: 5000,
-  socketTimeout: 7000
+  socketTimeout: 10000
+});
+
+// ⚡ LIVE SIGNAL: Verify email connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ ATELIER MAIL DISPATCH OFFLINE:', error.message);
+  } else {
+    console.log('✅ ATELIER MAIL DISPATCH ONLINE (Port 587 READY)');
+  }
 });
 
 const sendOrderConfirmation = (order) => {
