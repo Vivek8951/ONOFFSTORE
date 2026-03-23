@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const Razorpay = require('razorpay');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 // Route imports
 const productRoutes = require('./src/routes/productRoutes');
@@ -62,30 +63,12 @@ app.use('/api/banners', bannerRoutes);
 const { generateInvoicePDF } = require('./src/services/PDFService');
 const stream = require('stream');
 
-// 3.5. Email Service Setup (Nodemailer)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.googlemail.com',
-  port: 587,
-  secure: false, // Port 587 requires STARTTLS (secure: false)
-  requireTLS: true,
-  family: 4, 
-  auth: { 
-    user: process.env.EMAIL_USER, 
-    pass: (process.env.EMAIL_PASS || '').replace(/\s/g, '') 
-  },
-  connectionTimeout: 10000, // Shorter timeout for faster feedback
-  greetingTimeout: 5000,
-  socketTimeout: 10000
-});
+// 3.5. Digital Dispatch Hub (Resend API)
+// 💡 CLOUD-NATIVE: Using HTTP API instead of SMTP to bypass Render port blocks.
+const resend = new Resend(process.env.RESEND_API_KEY || 're_FnttV3RD_5qPELZ2AXQ87r4vA8CtBGysQ');
 
-// ⚡ LIVE SIGNAL: Verify email connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ ATELIER MAIL DISPATCH OFFLINE:', error.message);
-  } else {
-    console.log('✅ ATELIER MAIL DISPATCH ONLINE (Port 587 READY)');
-  }
-});
+console.log('✅ ATELIER DISPATCH HUB READY (Resend API Initialized)');
+
 
 const sendOrderConfirmation = (order) => {
   setImmediate(async () => {
@@ -103,38 +86,51 @@ const sendOrderConfirmation = (order) => {
         pdfStream.on('error', reject);
       });
 
-      const mailOptions = {
-        from: `"SMARTON BY ONOFF" <${process.env.EMAIL_USER}>`,
-        to: order.customerDetails.email,
+      const { data, error } = await resend.emails.send({
+        from: 'SMARTON ATELIER <onboarding@resend.dev>', // 💡 TIP: Verify your domain in Resend for custom email
+        to: order.customerDetails?.email || 'vicvivek9@gmail.com',
         subject: `Order Confirmed & Digital Bill: #${order._id.toString().slice(-6).toUpperCase()}`,
         html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px; border-radius: 10px;">
+          <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px; border-radius: 10px; background: #fff;">
             <h1 style="text-transform: uppercase; letter-spacing: 5px; text-align: center; color: #000;">SMARTON</h1>
             <p style="text-align: center; font-size: 10px; tracking: 2px; color: #888;">BY ONOFF STORE</p>
             <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
             <h2 style="font-size: 14px; text-transform: uppercase;">Purchase Confirmation</h2>
-            <p>Dear <b>${order.customerDetails.name}</b>,</p>
+            <p>Dear <b>${order.customerDetails?.name || 'Valued Member'}</b>,</p>
             <p>Your luxury pieces from SMARTON have been confirmed. We have attached your **Official Digital Bill** as a PDF to this email.</p>
             
-            <div style="background: #fcfcfc; padding: 20px; border-radius: 5px; margin: 20px 0;">
-              <p style="margin: 5px 0; font-size: 12px;"><b>Order ID:</b> ${order._id}</p>
-              <p style="margin: 5px 0; font-size: 12px;"><b>Amount Paid:</b> ₹${order.totalAmount}</p>
+            <div style="background: #fbfbfb; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #f0f0f0;">
+              <p style="margin: 5px 0; font-size: 12px; color: #333;"><b>Order ID:</b> #${order._id.toString().slice(-8).toUpperCase()}</p>
+              <p style="margin: 5px 0; font-size: 12px; color: #8b0000;"><b>Amount Paid:</b> ₹${order.totalAmount}</p>
             </div>
 
             <p style="font-size: 12px; color: #666; font-style: italic;">Thank you for your refined choice.</p>
             <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-            <p style="font-size: 10px; color: #aaa; text-align: center; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} SMARTON WORLDWIDE • MUMBAI</p>
+            <p style="font-size: 10px; color: #aaa; text-align: center; text-transform: uppercase; letter-spacing: 2px;">© ${new Date().getFullYear()} SMARTON WORLDWIDE • ATELIER DISPATCH</p>
           </div>
         `,
-        attachments: [{ filename: fileName, content: pdfBuffer }]
-      };
+        attachments: [
+          {
+            filename: fileName,
+            content: pdfBuffer,
+          },
+        ],
+      });
 
-      await transporter.sendMail(mailOptions);
-      console.log('[ORDER SIGNAL] Digital Bill successfully dispatched.');
-      await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `SECURE DISPATCHED: ${new Date().toLocaleTimeString()}` } });
+      if (error) throw error;
+
+      console.log('[ORDER SIGNAL] Digital Bill successfully dispatched via Resend API.');
+      await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `SECURE DISPATCHED: ${new Date().toLocaleTimeString()} (API)` } });
     } catch (err) {
-      console.error('[ORDER SIGNAL] Background Transmission Failed:', err.message);
-      await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `DISPATCH ERROR: ${err.message}` } });
+      console.error('[ORDER SIGNAL] API Transmission Failed:', err.message);
+      
+      // Detailed logging for the Admin to see
+      let errorMsg = err.message;
+      if (err.message.includes('authorized')) {
+        errorMsg = "RESEND: Verify your domain/email in Resend Dashboard to send to customers.";
+      }
+      
+      await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `API ERROR: ${errorMsg}` } });
     }
   });
 };
