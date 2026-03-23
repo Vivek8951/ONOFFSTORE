@@ -1,3 +1,4 @@
+// ❤️ ONOFF STORE V2
 const dns = require('dns');
 // 💡 CLOUD-HARDENED DNS: Force IPv4 and use Google Resolvers (8.8.8.8)
 dns.setServers(['8.8.8.8', '8.8.4.4']);
