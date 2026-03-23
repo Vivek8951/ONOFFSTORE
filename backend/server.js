@@ -1,13 +1,13 @@
+const dns = require('dns');
+// 💡 NETWORK FIX: Force IPv4 preference (Solves Render -> Gmail ENETUNREACH issues)
+dns.setDefaultResultOrder('ipv4first');
+
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const Razorpay = require('razorpay');
 const nodemailer = require('nodemailer');
-const dns = require('dns');
-
-// 💡 NETWORK FIX: Force IPv4 preference (Solves Render -> Gmail ENETUNREACH issues)
-dns.setDefaultResultOrder('ipv4first');
 
 // Route imports
 const productRoutes = require('./src/routes/productRoutes');
@@ -66,6 +66,8 @@ const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
   secure: true, 
+  // 🛰️ ATELIER SAFETY: Force IPv4 (family 4) to bypass cloud IPv6 blocks
+  family: 4, 
   auth: { 
     user: process.env.EMAIL_USER, 
     // 💡 AUTO-CLEAN: Removes any spaces from the 16-digit App Password automatically
