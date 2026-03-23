@@ -32,7 +32,7 @@ export default function LandingPage() {
       } catch (err) { console.error("Banner Feed Failure"); }
     };
     fetchBanners();
-    const interval = setInterval(fetchBanners, 10000); // 📡 REAL-TIME FEED SYNC
+    const interval = setInterval(fetchBanners, 10000);
 
     const handleScroll = () => setScrolled(window.scrollY);
     window.addEventListener('scroll', handleScroll);
@@ -52,9 +52,9 @@ export default function LandingPage() {
   }, [banners.length]);
 
   return (
-    <div className="relative min-h-[300vh] bg-black text-white selection:bg-[#f21c43] selection:text-white overflow-hidden font-sans">
+    <div className="relative min-h-[300vh] bg-[#faf9f6] text-gray-900 selection:bg-[#ce9c41] selection:text-white overflow-hidden font-sans">
       
-      {/* 🚀 DYNAMIC HERO - Architectural Parallax */}
+      {/* 👑 DYNAMIC HERO - Elegant Heritage Parallax */}
       <section className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
         {banners.length > 0 ? (
           banners.map((banner, idx) => (
@@ -66,174 +66,169 @@ export default function LandingPage() {
               <img 
                 src={banner.image} 
                 alt={banner.title} 
-                className="w-full h-full object-cover opacity-60 grayscale hover:grayscale-0 transition-all duration-[3000ms]"
+                className="w-full h-full object-cover transition-transform duration-[4000ms] hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black opacity-90"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-[#68050E]/60 via-black/40 to-[#68050E]/80 mix-blend-multiply"></div>
               
-              {/* Floating Content for each banner */}
+              {/* Floating Content */}
               <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                 <h1 className="text-[12vw] md:text-[15vw] font-black leading-[0.8] tracking-[-0.08em] uppercase italic transition-all duration-1000"
+                 <h1 className="text-[10vw] md:text-[8vw] font-serif text-[#FAF9F6] font-normal leading-[1.1] tracking-wide text-center drop-shadow-2xl transition-all duration-1000"
                      style={{ opacity: 1 - scrolled * 0.002 }}>
-                   {banner.title.split(' ')[0]}<span className="text-[#f21c43]">{banner.title.split(' ')[1] || 'ON'}</span>
+                   {banner.title}
                  </h1>
-                 <p className="text-[10px] md:text-sm font-black tracking-[1em] uppercase text-gray-400 opacity-60 mt-8 animate-pulse">
-                   {banner.title} • GLOBAL ARCHIVE
+                 <div className="w-24 h-[1px] bg-[#CE9C41] my-8 animate-pulse"></div>
+                 <p className="text-sm md:text-base font-serif text-[#CE9C41] tracking-[0.4em] uppercase opacity-90">
+                   Heritage Collection
                  </p>
               </div>
             </div>
           ))
         ) : (
-          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center bg-[#050505] overflow-hidden">
-             {/* 🌪️ ARCHITECTURAL LOADING VOID */}
+          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center bg-[#68050E] overflow-hidden">
              <div className="relative">
-                <div className="w-96 h-96 rounded-full border border-white/5 animate-spin-slow"></div>
+                <div className="w-48 h-48 rounded-full border border-[#CE9C41]/30 animate-spin-slow"></div>
+                <div className="w-64 h-64 rounded-full border border-[#CE9C41]/10 absolute -top-8 -left-8 animate-spin-slow-reverse"></div>
                 <div className="absolute inset-0 flex items-center justify-center">
                    <div className="flex flex-col items-center gap-4">
-                      <div className="text-[#f21c43] text-6xl font-black italic tracking-tighter uppercase animate-pulse">
-                        SMART<span className="text-white">ON</span>
-                      </div>
-                      <div className="flex gap-2">
-                         {[1,2,3].map(i => <div key={i} className="w-1 h-1 bg-[#f21c43] rounded-full animate-bounce" style={{animationDelay: `${i*0.2}s`}}></div>)}
+                      <div className="text-[#CE9C41] text-4xl font-serif tracking-[0.2em] uppercase">
+                        ONOFF
                       </div>
                    </div>
                 </div>
              </div>
-             <p className="absolute bottom-24 text-[10px] font-black uppercase tracking-[1em] text-gray-800 animate-pulse">ESTABLISHING GLOBAL ARCHIVE SIGNAL...</p>
+             <p className="absolute bottom-24 text-xs font-serif tracking-[0.3em] text-[#CE9C41] uppercase animate-pulse">Curating The Archive...</p>
           </div>
         )}
 
         {/* Cinematic Navigation Layer */}
         <div className="absolute bottom-24 flex flex-col items-center gap-10 z-20 animate-fade-in-up">
-           <Link href={isAuthenticated ? "/shop" : "/login"} className="group relative px-24 py-7 overflow-hidden border-2 border-white/10 hover:border-[#f21c43] transition-all duration-700 rounded-full backdrop-blur-md">
-              <span className="relative z-10 font-black uppercase tracking-[0.6em] text-xs group-hover:text-white transition-colors">
-                {isAuthenticated ? "Enter the Atelier" : "Join the Archive"}
+           <Link href={isAuthenticated ? "/shop" : "/login"} className="group relative px-16 py-5 overflow-hidden border border-[#CE9C41]/50 hover:border-[#CE9C41] transition-all duration-700 bg-black/20 backdrop-blur-md rounded-sm">
+              <span className="relative z-10 font-sans font-light uppercase tracking-[0.4em] text-xs text-[#FAF9F6] group-hover:text-white transition-colors">
+                {isAuthenticated ? "Enter The Atelier" : "Explore Collections"}
               </span>
-              <div className="absolute inset-0 bg-[#f21c43] translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-in-out"></div>
+              <div className="absolute inset-0 bg-[#CE9C41]/20 translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-in-out"></div>
            </Link>
            <div className="flex gap-4 items-center">
               {banners.map((_, i) => (
-                <div key={i} className={`h-1 transition-all duration-500 rounded-full ${i === currentBannerIdx ? 'w-12 bg-[#f21c43]' : 'w-4 bg-white/20'}`}></div>
+                <div key={i} className={`h-[2px] transition-all duration-500 ${i === currentBannerIdx ? 'w-12 bg-[#CE9C41]' : 'w-4 bg-white/40'}`}></div>
               ))}
            </div>
         </div>
       </section>
 
-      {/* 🏙️ ARCHITECTURAL FRAGMENTS - Second Section */}
-      <section className="relative z-20 bg-[#050505] py-60 px-6 md:px-24 border-y border-white/5">
-         <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-24 items-center">
+      {/* 🌺 HERITAGE & MODERNITY - Second Section */}
+      <section className="relative z-20 bg-[#FAF9F6] py-40 px-6 md:px-24">
+         <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-16 items-center">
             <div className="md:col-span-5 relative group order-2 md:order-1">
-               <div className="absolute -inset-10 bg-[#f21c43]/5 blur-3xl group-hover:bg-[#f21c43]/10 transition-all duration-1000"></div>
-               <div className="relative z-10 w-full h-[700px] overflow-hidden rounded-[40px] border border-white/10 group-hover:border-white/30 transition-all duration-1000">
+               <div className="relative z-10 w-full h-[600px] overflow-hidden border border-[#e0dacd] shadow-2xl p-4 bg-white">
                   <img 
-                    src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800" 
-                    className="w-full h-full object-cover grayscale group-hover:scale-110 group-hover:grayscale-0 transition-all duration-[2000ms]"
-                    alt="Identity 01"
+                    src="https://images.unsplash.com/photo-1583391733958-d25e07fac662?w=800" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-[2000ms]"
+                    alt="Heritage"
                   />
                </div>
-               <span className="absolute -bottom-10 -right-10 z-20 text-[12rem] font-black text-white/5 tracking-tighter mix-blend-difference pointer-events-none select-none">01</span>
+               <div className="absolute -bottom-8 -right-8 w-48 h-48 border border-[#CE9C41] z-0 hidden md:block"></div>
+               <div className="absolute -top-8 -left-8 w-32 h-32 bg-[#68050E] z-0 hidden md:block opacity-5"></div>
             </div>
             
-            <div className="md:col-span-7 flex flex-col gap-12 order-1 md:order-2">
-               <span className="text-[#f21c43] text-[10px] font-black tracking-[1em] uppercase">The Philosophy</span>
-               <h2 className="text-5xl md:text-[8rem] font-black uppercase tracking-tighter leading-[0.85] italic transition-all">
-                  IDENTITY <br /> IS THE ONLY <br /> <span className="text-[#f21c43]">CURRENCY.</span>
+            <div className="md:col-span-7 flex flex-col gap-10 order-1 md:order-2 pl-0 md:pl-12">
+               <span className="text-[#CE9C41] text-xs font-sans tracking-[0.4em] uppercase font-semibold">The Philosophy</span>
+               <h2 className="text-5xl md:text-7xl font-serif text-[#68050E] leading-[1.1]">
+                  Rooted In Heritage, <br /> Designed For The <br /> Modern Era.
                </h2>
-               <p className="text-xl md:text-3xl text-gray-500 font-light italic leading-relaxed max-w-2xl border-l-4 border-[#f21c43] pl-10">
-                  Armor for the urban vanguard. Limited to 100 collections. Never reproduced. The archive is open.
+               <p className="text-lg md:text-xl text-gray-600 font-serif leading-relaxed max-w-2xl border-l-2 border-[#CE9C41] pl-8">
+                  Discover luxury that transcends time. Each piece in our collection is meticulously crafted, blending classic Indian artistry with contemporary silhouettes. Limited editions, unparalleled elegance.
                </p>
-               <div className="flex gap-12 mt-4 text-[11px] font-black uppercase tracking-widest text-gray-600">
-                  <div className="flex flex-col gap-2"><span className="text-white">STOCK</span><span>LIMITED</span></div>
-                  <div className="flex flex-col gap-2"><span className="text-white">ORIGIN</span><span>MUMBAI HUB</span></div>
-                  <div className="flex flex-col gap-2"><span className="text-white">STATUS</span><span>ONLINE</span></div>
+               <div className="flex gap-16 mt-8 border-t border-[#e0dacd] pt-8 text-xs font-sans uppercase tracking-[0.2em] text-[#68050E]">
+                  <div className="flex flex-col gap-2 font-semibold"><span className="text-gray-400">Craftsmanship</span><span>Artisanal</span></div>
+                  <div className="flex flex-col gap-2 font-semibold"><span className="text-gray-400">Origin</span><span>India</span></div>
+                  <div className="flex flex-col gap-2 font-semibold"><span className="text-gray-400">Purity</span><span>100% Authentic</span></div>
                </div>
             </div>
          </div>
       </section>
 
-      {/* 🎭 THE GALLERY OF DROPS - Swiper Inspired Layout */}
-      <section className="relative z-20 py-60">
-         <div className="flex flex-col items-center mb-40">
-            <h2 className="text-[12vw] font-black uppercase tracking-[-0.05em] text-white/5 animate-ticker whitespace-nowrap">
-              SMARTON_PRIVATE_COLLECTION_2024_DROP_AVAILABLE_ARCHIVE_ACCESS_ONLY_
+      {/* 🖼️ THE GALLERY OF DROPS - Elegant Grid */}
+      <section className="relative z-20 py-40 bg-white">
+         <div className="flex flex-col items-center mb-24 text-center">
+            <span className="text-[#CE9C41] text-xs font-sans tracking-[0.4em] uppercase font-semibold mb-6">Archive Releases</span>
+            <h2 className="text-4xl md:text-5xl font-serif text-[#68050E]">
+              The Signature Series
             </h2>
+            <div className="w-16 h-[1px] bg-[#68050E] mt-8"></div>
          </div>
 
-         <div className="max-w-[1600px] mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-16">
+         <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
-              { img: 'https://images.unsplash.com/photo-1534030347209-467a5b0ad3e6?w=600', title: 'Industrial Suit', tag: 'V.1' },
-              { img: 'https://images.unsplash.com/photo-1558769132-cb1fac0840c2?w=600', title: 'Vanguard Techelite', tag: 'V.9' },
-              { img: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600', title: 'Carbon Jacket', tag: 'V.4' }
+              { img: 'https://images.unsplash.com/photo-1610030469983-98e550d61dc0?w=600', title: 'Regal Velvet Sherwani', detail: 'Hand-embroidered' },
+              { img: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600', title: 'Silk Fusion Drape', detail: 'Varanasi Weave' },
+              { img: 'https://images.unsplash.com/photo-1583391733975-6b45e45c48b2?q=80', title: 'Classic Jodhpuri Suit', detail: 'Tailored fit' }
             ].map((item, i) => (
-              <div key={i} className="group relative bg-[#0a0a0a] rounded-[50px] overflow-hidden border border-white/5 transition-all duration-700 hover:border-[#f21c43]/30 hover:-translate-y-8">
-                 <div className="h-[500px] overflow-hidden">
-                    <img src={item.img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-[1500ms]" alt={item.title} />
+              <div key={i} className="group flex flex-col gap-6 cursor-pointer">
+                 <div className="h-[600px] overflow-hidden border border-[#e0dacd] bg-[#FAF9F6] p-3">
+                    <img src={item.img} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-1000" alt={item.title} />
                  </div>
-                 <div className="p-12 flex justify-between items-center bg-gradient-to-t from-black to-transparent">
-                    <div>
-                      <h3 className="text-2xl font-black uppercase tracking-widest italic">{item.title}</h3>
-                      <p className="text-[10px] font-bold text-gray-500 mt-2 uppercase tracking-widest">Protocol Version {item.tag}</p>
-                    </div>
-                    <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#f21c43] group-hover:border-[#f21c43] transition-all">
-                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="translate-x-0.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </div>
+                 <div className="flex flex-col items-center text-center">
+                    <h3 className="text-xl font-serif text-[#68050E] mb-2">{item.title}</h3>
+                    <p className="text-xs font-sans text-gray-500 uppercase tracking-widest">{item.detail}</p>
                  </div>
               </div>
             ))}
          </div>
+         <div className="flex justify-center mt-20">
+             <Link href="/shop" className="px-12 py-4 border border-[#68050E] text-[#68050E] font-sans text-xs uppercase tracking-[0.3em] hover:bg-[#68050E] hover:text-white transition-all duration-500">
+                View Complete Catalog
+             </Link>
+         </div>
       </section>
 
-      {/* 🔮 FINAL GATEWAY - Immersive End */}
-      <section className="relative z-20 h-screen flex flex-col items-center justify-center text-center bg-[#050505] border-t border-white/5 overflow-hidden">
-         <div className="absolute inset-0 z-0 flex items-center justify-center opacity-10">
-            <h2 className="text-[50vw] font-black tracking-tighter uppercase italic select-none">ONOFF</h2>
-         </div>
-         <div className="relative z-10 flex flex-col items-center gap-12">
-            <h2 className="text-7xl md:text-[10rem] font-black italic uppercase tracking-tighter leading-none mb-4 drop-shadow-2xl">
-              REVEAL <br /> THE ARCHIVE.
+      {/* 🏺 FINAL GATEWAY - Luxurious Footer Lead */}
+      <section className="relative z-20 py-40 flex flex-col items-center justify-center text-center bg-[#68050E] overflow-hidden">
+         {/* Subtle Pattern Background */}
+         <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(#CE9C41 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+         
+         <div className="relative z-10 flex flex-col items-center gap-10 max-w-4xl px-6">
+            <h2 className="text-5xl md:text-7xl font-serif text-[#FAF9F6] leading-[1.2]">
+              Experience True Elegance.
             </h2>
-            <Link href="/login" className="px-32 py-10 bg-white text-black font-black text-2xl uppercase tracking-[0.6em] hover:bg-[#f21c43] hover:text-white transition-all transform hover:scale-110 active:scale-95 shadow-[0_40px_100px_rgba(242,28,67,0.4)] rounded-full">
-               Verified Access
+            <Link href="/login" className="mt-8 px-16 py-6 bg-[#CE9C41] text-[#68050E] font-sans font-semibold text-xs uppercase tracking-[0.3em] hover:bg-white transition-colors duration-500">
+               Sign In & Explore
             </Link>
-            <p className="text-[10px] text-gray-600 font-black tracking-[1em] uppercase mt-12 animate-pulse">End of Signal • Private Archive Open</p>
          </div>
       </section>
 
-      <footer className="relative z-30 py-32 px-12 border-t border-white/5 bg-black text-[10px] font-black tracking-[0.5em] text-gray-500 flex flex-col md:flex-row justify-between items-center gap-16 uppercase">
-         <div className="flex gap-16 order-2 md:order-1">
-            <span className="hover:text-[#f21c43] cursor-crosshair transition-colors">Mumbai Hub</span>
-            <span className="hover:text-[#f21c43] cursor-crosshair transition-colors">Digital Bill</span>
-            <span className="hover:text-[#f21c43] cursor-crosshair transition-colors">Security Node</span>
+      <footer className="relative z-30 py-20 px-12 border-t border-[#e0dacd] bg-[#FAF9F6] text-xs font-sans tracking-[0.2em] text-[#68050E] flex flex-col md:flex-row justify-between items-center gap-10 uppercase">
+         <div className="flex gap-10">
+            <span className="hover:text-[#CE9C41] cursor-pointer transition-colors">Boutiques</span>
+            <span className="hover:text-[#CE9C41] cursor-pointer transition-colors">Client Care</span>
+            <span className="hover:text-[#CE9C41] cursor-pointer transition-colors">Legal</span>
          </div>
-         <div className="text-white text-xl md:text-2xl italic tracking-tighter font-black order-1 md:order-2">SMART<span className="text-[#f21c43]">ON</span></div>
-         <div className="flex gap-16 text-right order-3">
-            <span className="text-gray-800">AES-256 ENCRYPTED</span>
-            <span className="hover:text-white transition-colors">© 2024 WORLDWIDE</span>
+         <div className="text-3xl font-serif text-[#68050E] tracking-widest">ONOFF</div>
+         <div className="flex gap-10 text-right">
+            <span className="text-gray-500">Made in India</span>
+            <span className="hover:text-[#CE9C41] transition-colors">© 2024 ONOFF</span>
          </div>
       </footer>
 
       <style jsx global>{`
-        @keyframes revealUp {
-          from { transform: translateY(100%); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+        @keyframes spinSlowReverse {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
         }
-        @keyframes ticker {
-          from { transform: translateX(100%); }
-          to { transform: translateX(-100%); }
+        .animate-spin-slow-reverse {
+          animation: spinSlowReverse 30s linear infinite;
         }
         @keyframes spinSlow {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
         .animate-spin-slow {
-          animation: spinSlow 20s linear infinite;
-        }
-        .animate-ticker {
-          animation: ticker 60s linear infinite;
+          animation: spinSlow 40s linear infinite;
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-fade-in { animation: fadeIn 2s ease-out; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(60px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in-up { animation: fadeInUp 1.5s cubic-bezier(0.19, 1, 0.22, 1) both; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fadeInUp 1.5s ease-out both; }
       `}</style>
     </div>
   );

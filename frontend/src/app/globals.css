@@ -5,8 +5,15 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --indian-maroon: #68050e;
+    --indian-red: #8b0000;
+    --indian-gold: #ce9c41;
+    --indian-cream: #faf9f6;
+    --indian-sand: #f4f0ec;
+  }
   body {
-    @apply bg-white text-gray-900 antialiased font-sans selection:bg-[#f21c43] selection:text-white;
+    @apply bg-[var(--indian-cream)] text-gray-900 antialiased font-sans selection:bg-[var(--indian-gold)] selection:text-white;
   }
 }
 

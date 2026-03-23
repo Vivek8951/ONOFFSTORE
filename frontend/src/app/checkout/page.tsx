@@ -39,7 +39,7 @@ export default function Checkout() {
     if (phone) setForm(f => ({ ...f, phone }));
   }, []);
 
-  const totalAmount = cartItems.reduce((sum, item) => sum + (Number(item.price) * (item.qty || 1)), 0) || 16998;
+  const totalAmount = cartItems.reduce((sum, item) => sum + (Number(item.price) * (item.qty || 1)), 0);
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,16 +57,13 @@ export default function Checkout() {
           phone: form.phone,
           address: form.address,
         },
-        items: cartItems.length > 0 ? cartItems.map(item => ({
+        items: cartItems.map(item => ({
           product: item._id || item.id,
           name: item.name,
           quantity: item.qty || 1,
           price: Number(item.price),
           size: item.size || 'M',
-        })) : [
-          { name: 'Oversized Parachute Cargo', quantity: 1, price: 8499 },
-          { name: 'Essential Utility Jacket', quantity: 1, price: 8499 },
-        ],
+        })),
         totalAmount,
       };
 
@@ -113,24 +110,24 @@ export default function Checkout() {
 
   if (orderPlaced) {
     return (
-      <div className="min-h-screen bg-white font-sans flex flex-col">
+      <div className="min-h-screen bg-[var(--indian-cream)] font-sans flex flex-col selection:bg-[var(--indian-gold)] selection:text-white">
         <Navbar />
         <main className="flex-1 flex items-center justify-center px-6 py-32">
           <div className="max-w-md w-full text-center">
-            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-8 border-2 border-green-100">
+            <div className="w-20 h-20 bg-green-50/50 rounded-full flex items-center justify-center mx-auto mb-8 border border-green-200">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#f21c43] mb-3">Order Confirmed</p>
-            <h1 className="text-4xl font-black uppercase tracking-tight mb-4">Thank You, {orderPlaced.name.split(' ')[0]}!</h1>
-            <p className="text-gray-500 mb-2">Order <span className="font-black text-black">{orderPlaced.id}</span> has been placed successfully.</p>
-            <p className="text-gray-500 mb-10 text-sm">A confirmation email has been sent to <strong>{orderPlaced.email}</strong></p>
+            <p className="text-[10px] font-serif font-semibold uppercase tracking-[0.4em] text-[var(--indian-maroon)] mb-3">Order Confirmed</p>
+            <h1 className="text-4xl font-serif font-semibold text-[var(--indian-maroon)] italic uppercase tracking-tight mb-4">Thank You, {orderPlaced.name.split(' ')[0]}!</h1>
+            <p className="text-gray-500 mb-2">Order <span className="font-serif font-semibold tracking-wider text-[var(--indian-maroon)]">{orderPlaced.id}</span> has been placed successfully.</p>
+            <p className="text-gray-500 mb-10 text-[10px] font-serif uppercase tracking-widest">A confirmation email has been sent to <strong>{orderPlaced.email}</strong></p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/my-orders" className="bg-black text-white px-8 py-4 font-black uppercase tracking-widest text-xs hover:bg-[#f21c43] transition-all rounded-xl">
+              <Link href="/my-orders" className="bg-[var(--indian-maroon)] text-[var(--indian-gold)] px-8 py-5 font-serif font-semibold uppercase tracking-[0.2em] text-[10px] hover:bg-[var(--indian-gold)] hover:text-white transition-all rounded-sm">
                 Track My Order
               </Link>
-              <Link href="/shop" className="border-2 border-black text-black px-8 py-4 font-black uppercase tracking-widest text-xs hover:bg-black hover:text-white transition-all rounded-xl">
+              <Link href="/shop" className="border border-[var(--indian-gold)]/40 text-[var(--indian-maroon)] bg-[var(--indian-cream)] px-8 py-5 font-serif font-semibold uppercase tracking-[0.2em] text-[10px] hover:border-[var(--indian-gold)] hover:bg-[var(--indian-gold)] hover:text-white transition-all rounded-sm shadow-sm">
                 Continue Shopping
               </Link>
             </div>
@@ -142,65 +139,65 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa] font-sans flex flex-col pt-28">
+    <div className="min-h-screen bg-[var(--indian-cream)] font-sans flex flex-col pt-28 selection:bg-[var(--indian-gold)] selection:text-white">
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-6 md:px-8 py-10">
-        <h1 className="text-4xl font-black uppercase tracking-tight mb-10">Checkout</h1>
+        <h1 className="text-4xl font-serif font-semibold italic text-[var(--indian-maroon)] uppercase tracking-tight mb-10">Checkout</h1>
 
         <form onSubmit={handlePlaceOrder}>
           <div className="flex flex-col lg:flex-row gap-10">
             {/* Left — Customer Details */}
             <div className="flex-1 flex flex-col gap-8">
               {/* Shipping */}
-              <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                <h2 className="text-sm font-black uppercase tracking-widest mb-6 pb-4 border-b border-gray-100">Shipping Details</h2>
+              <div className="bg-white p-8 rounded-2xl border border-[var(--indian-gold)]/20 shadow-xl">
+                <h2 className="text-[10px] font-serif font-semibold text-[var(--indian-maroon)] uppercase tracking-widest mb-6 pb-4 border-b border-[var(--indian-gold)]/20">Shipping Details</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input
                     type="text" placeholder="Full Name" required
                     value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                    className="border border-gray-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-black transition-colors"
+                    className="border border-gray-200 rounded-sm p-4 text-sm font-medium outline-none focus:border-[var(--indian-maroon)] transition-colors"
                   />
                   <input
                     type="email" placeholder="Email Address" required
                     value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                    className="border border-gray-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-black transition-colors"
+                    className="border border-gray-200 rounded-sm p-4 text-sm font-medium outline-none focus:border-[var(--indian-maroon)] transition-colors"
                   />
                   <input
                     type="tel" placeholder="Phone Number (10 digits)" required maxLength={10}
                     value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
-                    className="border border-gray-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-black transition-colors"
+                    className="border border-gray-200 rounded-sm p-4 text-sm font-medium outline-none focus:border-[var(--indian-maroon)] transition-colors"
                   />
                   <input
                     type="text" placeholder="City / State" required
-                    className="border border-gray-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-black transition-colors"
+                    className="border border-gray-200 rounded-sm p-4 text-sm font-medium outline-none focus:border-[var(--indian-maroon)] transition-colors"
                   />
                   <input
                     type="text" placeholder="Full Shipping Address" required
                     value={form.address} onChange={e => setForm({ ...form, address: e.target.value })}
-                    className="border border-gray-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-black transition-colors md:col-span-2"
+                    className="border border-gray-200 rounded-sm p-4 text-sm font-medium outline-none focus:border-[var(--indian-maroon)] transition-colors md:col-span-2"
                   />
                 </div>
               </div>
 
               {/* Payment Note */}
-              <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                <h2 className="text-sm font-black uppercase tracking-widest mb-4 pb-4 border-b border-gray-100">Payment</h2>
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f21c43" strokeWidth="2.5"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
+              <div className="bg-white p-8 rounded-2xl border border-[var(--indian-gold)]/20 shadow-xl">
+                <h2 className="text-[10px] font-serif font-semibold text-[var(--indian-maroon)] uppercase tracking-widest mb-4 pb-4 border-b border-[var(--indian-gold)]/20">Payment</h2>
+                <div className="flex items-center gap-4 p-4 bg-[var(--indian-cream)]/50 rounded-xl border border-[var(--indian-gold)]/30">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--indian-maroon)" strokeWidth="2.5"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
                   <div>
-                    <p className="text-sm font-black uppercase">Cash on Delivery / Demo Payment</p>
-                    <p className="text-xs text-gray-400 mt-1">Razorpay integration active. Order will be confirmed immediately.</p>
+                    <p className="text-[10px] font-serif font-semibold text-[var(--indian-maroon)] uppercase tracking-widest">Cash on Delivery / Demo Payment</p>
+                    <p className="text-xs text-gray-500 mt-1 italic font-serif">Razorpay integration active. Order will be confirmed immediately.</p>
                   </div>
                 </div>
               </div>
 
-              {error && <p className="text-[#f21c43] font-bold text-sm">{error}</p>}
+              {error && <p className="text-[var(--indian-maroon)] font-serif font-semibold text-sm">{error}</p>}
 
               <button
                 type="submit"
                 disabled={isProcessing}
-                className="w-full bg-black text-white font-black text-base py-5 uppercase tracking-widest hover:bg-[#f21c43] transition-all rounded-2xl disabled:opacity-60 flex items-center justify-center gap-3"
+                className="w-full bg-[var(--indian-maroon)] text-[var(--indian-gold)] font-serif font-semibold text-xs py-5 uppercase tracking-[0.2em] hover:bg-[var(--indian-gold)] hover:text-white transition-all rounded-sm disabled:opacity-60 flex items-center justify-center gap-3 shadow-md"
               >
                 {isProcessing ? (
                   <><span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing Order...</>
@@ -210,45 +207,34 @@ export default function Checkout() {
 
             {/* Right — Order Summary */}
             <div className="w-full lg:w-80">
-              <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm sticky top-36">
-                <h2 className="text-sm font-black uppercase tracking-widest mb-6 pb-4 border-b border-gray-100">Order Summary</h2>
+              <div className="bg-white p-8 rounded-2xl border border-[var(--indian-gold)]/20 shadow-xl sticky top-36">
+                <h2 className="text-[10px] font-serif font-semibold text-[var(--indian-maroon)] uppercase tracking-widest mb-6 pb-4 border-b border-[var(--indian-gold)]/20">Order Summary</h2>
 
                 {cartItems.length > 0 ? (
                   <div className="flex flex-col gap-4 mb-6">
                     {cartItems.map((item, i) => (
                       <div key={i} className="flex gap-3 items-center">
-                        <img src={item.image} alt={item.name} className="w-14 h-18 object-cover rounded-xl border border-gray-100" />
+                        <img src={item.image} alt={item.name} className="w-14 h-18 object-cover rounded-md border border-[var(--indian-gold)]/30" />
                         <div className="flex-1">
-                          <p className="text-xs font-bold leading-tight">{item.name}</p>
-                          <p className="text-[10px] text-gray-400">Size: {item.size || 'M'} × {item.qty || 1}</p>
-                          <p className="text-sm font-black text-[#f21c43] mt-1">₹{Number(item.price).toLocaleString()}</p>
+                          <p className="text-[10px] font-serif font-semibold text-[var(--indian-maroon)] italic leading-tight">{item.name}</p>
+                          <p className="text-[9px] font-serif uppercase tracking-widest text-gray-400">Size: {item.size || 'M'} × {item.qty || 1}</p>
+                          <p className="text-sm font-serif font-semibold text-[var(--indian-maroon)] mt-1">₹{Number(item.price).toLocaleString()}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-3 mb-6">
-                    {[
-                      { name: 'Oversized Parachute Cargo', price: '₹8,499', img: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=200' },
-                      { name: 'Essential Utility Jacket', price: '₹8,499', img: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=200' },
-                    ].map(item => (
-                      <div key={item.name} className="flex gap-3 items-center">
-                        <img src={item.img} alt={item.name} className="w-14 object-cover rounded-xl border border-gray-100 aspect-square" />
-                        <div className="flex-1">
-                          <p className="text-xs font-bold leading-tight">{item.name}</p>
-                          <p className="text-sm font-black text-[#f21c43] mt-1">{item.price}</p>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex flex-col gap-3 mb-6 items-center justify-center opacity-70 py-6 text-center">
+                     <p className="text-[10px] font-serif font-semibold text-[var(--indian-maroon)] uppercase tracking-widest">Cart is empty</p>
                   </div>
                 )}
 
-                <div className="border-t border-gray-100 pt-4 flex flex-col gap-2 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span className="font-bold">₹{totalAmount.toLocaleString()}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span className="font-bold text-green-600">FREE</span></div>
-                  <div className="flex justify-between pt-3 border-t border-gray-100 text-base">
-                    <span className="font-black uppercase">Total</span>
-                    <span className="font-black text-[#f21c43]">₹{totalAmount.toLocaleString()}</span>
+                <div className="border-t border-[var(--indian-gold)]/20 pt-4 flex flex-col gap-2 text-[10px] font-serif uppercase tracking-widest">
+                  <div className="flex justify-between"><span className="text-[var(--indian-maroon)]/60 font-semibold">Subtotal</span><span className="font-semibold text-[var(--indian-maroon)]">₹{totalAmount.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-[var(--indian-maroon)]/60 font-semibold">Shipping</span><span className="font-semibold text-[var(--indian-maroon)]">FREE</span></div>
+                  <div className="flex justify-between pt-3 border-t border-[var(--indian-gold)]/20 text-base mt-2">
+                    <span className="font-serif font-semibold text-[10px] uppercase text-gray-500 tracking-widest mt-1">Total</span>
+                    <span className="font-serif font-semibold text-xl text-[var(--indian-maroon)] italic">₹{totalAmount.toLocaleString()}</span>
                   </div>
                 </div>
               </div>

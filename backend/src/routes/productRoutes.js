@@ -15,7 +15,11 @@ router.get('/', async (req, res) => {
 // Admin: Add a new product
 router.post('/', async (req, res) => {
   try {
-    const newProduct = new Product(req.body);
+    const productData = req.body;
+    if (!productData.slug && productData.name) {
+      productData.slug = productData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 1000);
+    }
+    const newProduct = new Product(productData);
     const savedProduct = await newProduct.save();
     res.status(201).json(savedProduct);
   } catch (error) {
