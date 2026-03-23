@@ -9,7 +9,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const Razorpay = require('razorpay');
 const { google } = require('googleapis');
-const dns = require('dns');
 
 // Route imports
 const productRoutes = require('./src/routes/productRoutes');
