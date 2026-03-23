@@ -187,24 +187,12 @@ orderRouter.post('/create', async (req, res) => {
     });
     await newOrder.save();
 
-    // 💡 ATELIER INVENTORY HUB: Decrement stock for purchased items
-    try {
-      for (const item of items) {
-        const product = await mongoose.model('Product').findById(item.product);
-        if (product && product.stock > 0) {
-          product.stock = Math.max(0, product.stock - (item.quantity || 1));
-          await product.save();
-        }
-      }
-    } catch (stockErr) {
-      console.warn('⚠️ Stock adjustment deferred:', stockErr.message);
-    }
-
     // 2. Try Razorpay — skip gracefully if keys are not configured
     let rzpOrder = null;
     const hasRealKeys = process.env.RAZORPAY_KEY_ID && 
                         !process.env.RAZORPAY_KEY_ID.includes('fallback') && 
                         !process.env.RAZORPAY_KEY_ID.includes('test_onoff');
+    
     if (hasRealKeys) {
       try {
         rzpOrder = await razorpay.orders.create({
@@ -217,16 +205,28 @@ orderRouter.post('/create', async (req, res) => {
       } catch (rzpErr) {
         console.warn('⚠️ Razorpay skipped:', rzpErr.message);
       }
+    } else {
+      newOrder.paymentDetails.status = 'Completed';
+      await newOrder.save();
     }
 
-    // 3. Auto-confirm payment for demo/dev mode (no real Razorpay)
-    if (!rzpOrder) {
-      newOrder.paymentDetails.status = 'Completed';
-      newOrder.orderStatus = 'Pending'; // Admin still needs to accept
-      await newOrder.save();
-      // Send confirmation email background
-      sendOrderConfirmation(newOrder);
-    }
+    // 3. BACKGROUND SIGNAL HUB: Trigger stock and email non-blocking
+    setImmediate(async () => {
+       try {
+          // A. Stock Adjustment
+          for (const item of items) {
+             const product = await mongoose.model('Product').findById(item.product);
+             if (product && product.stock > 0) {
+                product.stock = Math.max(0, product.stock - (item.quantity || 1));
+                await product.save();
+             }
+          }
+          // B. Email Confirmation
+          sendOrderConfirmation(newOrder);
+       } catch (bgErr) {
+          console.error('[ATELIER BACKGROUND ERROR]', bgErr.message);
+       }
+    });
 
     res.json({ success: true, dbOrderId: newOrder._id, razorpayOrder: rzpOrder });
   } catch (error) {

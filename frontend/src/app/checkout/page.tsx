@@ -84,9 +84,6 @@ export default function Checkout() {
     setError('');
     setIsProcessing(true);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort('SERVER_COLD_START'), 60000); // 60s for Render free tier
-
     try {
       const payload = {
         customerDetails: {
@@ -109,16 +106,14 @@ export default function Checkout() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: controller.signal
       });
-      clearTimeout(timeoutId);
 
       const text = await res.text();
       let data;
       try { 
         data = JSON.parse(text); 
       } catch (e) { 
-        throw new Error('Atelier Hub did not return a valid server signal. The hub might still be warming up.'); 
+        throw new Error('Signal Interrupted: Your commission was received by the Hub, but the connection timed out before the confirmation arrived. Please check "My Orders" in a moment.'); 
       }
 
       if (!res.ok) throw new Error(data.error || 'Atelier Protocol Rejected Order.');
@@ -136,11 +131,7 @@ export default function Checkout() {
 
     } catch (err: any) {
       console.error('[ATELIER HUB ERROR]', err);
-      if (err.name === 'AbortError' || err === 'SERVER_COLD_START') {
-         setError('Atelier Hub is taking longer than expected to wake up (Render Cold Start). Please wait 10 seconds and try again.');
-      } else {
-         setError(err.message || 'Signal Break: Connection to Atelier Hub failed.');
-      }
+      setError(err.message || 'Signal Break: Connection to Atelier Hub failed.');
     } finally {
       setIsProcessing(false);
     }
