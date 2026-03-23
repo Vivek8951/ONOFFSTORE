@@ -1,5 +1,6 @@
 const dns = require('dns');
-// 💡 NETWORK FIX: Force IPv4 preference (Solves Render -> Gmail ENETUNREACH issues)
+// 💡 CLOUD-HARDENED DNS: Force IPv4 and use Google Resolvers (8.8.8.8)
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 dns.setDefaultResultOrder('ipv4first');
 
 require('dotenv').config();
@@ -68,6 +69,7 @@ const transporter = nodemailer.createTransport({
   secure: false, // Port 587 requires STARTTLS (secure: false)
   requireTLS: true,
   family: 4, 
+  localAddress: '0.0.0.0', 
   auth: { 
     user: process.env.EMAIL_USER, 
     pass: (process.env.EMAIL_PASS || '').replace(/\s/g, '') 
