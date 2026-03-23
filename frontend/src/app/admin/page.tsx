@@ -15,11 +15,13 @@ export default function AdminPage() {
   const [inventory, setInventory] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
-  const [discounts, setDiscounts] = useState<any[]>([]);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [isEditingProduct, setIsEditingProduct] = useState<string | null>(null);
   const [isAddingBanner, setIsAddingBanner] = useState(false);
-  const [isAddingDiscount, setIsAddingDiscount] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  
+  // Modals
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   
   const [newProduct, setNewProduct] = useState({
     name: '',
@@ -32,7 +34,6 @@ export default function AdminPage() {
   });
 
   const [newBanner, setNewBanner] = useState({ title: '', image: '', linkProductId: '', active: true });
-  const [newDiscount, setNewDiscount] = useState({ code: '', amount: '', type: 'percentage', active: true });
 
   const fetchArchive = async () => {
     try {
@@ -55,22 +56,22 @@ export default function AdminPage() {
         id: `#${o._id.slice(-6).toUpperCase()}`,
         _id: o._id,
         user: o.customerDetails?.name || 'Member',
+        email: o.customerDetails?.email,
+        phone: o.customerDetails?.phone,
+        address: o.customerDetails?.address,
         total: `₹${o.totalAmount}`,
         status: o.orderStatus || 'Pending',
         item: o.items?.[0]?.name || 'Luxury Archive',
+        items: o.items || [],
         date: new Date(o.createdAt).toLocaleString(),
+        courier: o.shippingDetails?.courier || '',
+        trackingId: o.shippingDetails?.trackingId || '',
         customerDetails: o.customerDetails
       })));
 
       const bRes = await fetch(`${API_URL}/api/banners/admin/all`, { cache: 'no-store' });
       const bData = await bRes.json();
       setBanners(bData);
-
-      // We'll mock discounts for now as there isn't a solid backend endpoint for them yet in the viewed code
-      setDiscounts([
-        { code: 'OFFER10', amount: '10', type: 'percentage', active: true },
-        { code: 'VIP20', amount: '20', type: 'fixed', active: true }
-      ]);
     } catch (err: any) {
       console.error('Atelier Sync Failed:', err.message);
     } finally {
@@ -88,11 +89,25 @@ export default function AdminPage() {
     else alert('Invalid Access Code');
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+         setNewProduct(prev => ({ ...prev, image: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    const url = isEditingProduct ? `${API_URL}/api/products/${isEditingProduct}` : `${API_URL}/api/products`;
+    const method = isEditingProduct ? 'PUT' : 'POST';
+    
     try {
-      const res = await fetch(`${API_URL}/api/products`, {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newProduct,
@@ -102,34 +117,51 @@ export default function AdminPage() {
       });
       if (res.ok) {
         setIsAddingProduct(false);
+        setIsEditingProduct(null);
         fetchArchive();
         setNewProduct({ name: '', price: '', stock: 0, image: '', sizes: ['M'], category: 'Fusion', description: '' });
       }
     } catch (err) { alert('Failed to Publish Piece'); }
   };
 
-  const handleSaveBanner = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${API_URL}/api/banners`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newBanner)
-      });
-      if (res.ok) {
-        setIsAddingBanner(false);
-        fetchArchive();
-        setNewBanner({ title: '', image: '', linkProductId: '', active: true });
-      }
-    } catch (err) { alert('Failed to Publish Banner'); }
+  const handleEditProduct = (p: any) => {
+     setNewProduct({
+        name: p.name,
+        price: p.price.toString(),
+        stock: p.stock,
+        image: p.image,
+        sizes: p.sizes,
+        category: p.category,
+        description: p.description
+     });
+     setIsEditingProduct(p.id);
+     setIsAddingProduct(true);
   };
 
-  const handleDeleteBanner = async (id: string) => {
-    if (!confirm('Abort this banner?')) return;
-    try {
-      await fetch(`${API_URL}/api/banners/${id}`, { method: 'DELETE' });
-      fetchArchive();
-    } catch (err) { alert('Delete Failure'); }
+  const handleUpdateOrderStatus = async (orderId: string, status: string, courier: string, trackingId: string) => {
+     try {
+        const res = await fetch(`${API_URL}/api/orders/${orderId}/status`, {
+           method: 'PUT',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ status, courier, trackingId })
+        });
+        if (res.ok) {
+           setSelectedOrder(null);
+           fetchArchive();
+           alert(`Order updated to: ${status}`);
+        }
+     } catch (err) { alert('Status Update Failed'); }
+  };
+
+  const handleResendInvoice = async (orderId: string, email: string) => {
+     try {
+        const res = await fetch(`${API_URL}/api/orders/resend-invoice`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ orderId, overrideEmail: email })
+        });
+        if (res.ok) alert('Atelier Hub: Digital Invoice dispatched!');
+     } catch (err) { alert('Dispatch Failure'); }
   };
 
   if (!isAuthenticated) {
@@ -137,7 +169,7 @@ export default function AdminPage() {
       <div className="min-h-screen bg-[var(--indian-midnight)] flex items-center justify-center p-6 selection:bg-[var(--indian-gold)]">
         <div className="w-full max-w-md animate-fade-in-up">
            <div className="text-center mb-12">
-              <h1 className="text-4xl font-serif font-bold italic tracking-[0.4em] text-[var(--indian-gold)] mb-4 gold-glow">ONOFF</h1>
+              <h1 className="text-4xl font-serif font-bold italic tracking-[0.4em] text-[var(--indian-gold)] mb-4 gold-glow uppercase">ONOFF</h1>
               <p className="text-[10px] uppercase tracking-[0.5em] text-white/40">Vault Access Required</p>
            </div>
            
@@ -172,15 +204,15 @@ export default function AdminPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 mb-20 animate-fade-in-up">
            <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.6em] text-[var(--indian-gold)] mb-4">Elite Control Center</p>
-              <h1 className="text-5xl md:text-7xl font-serif font-bold italic tracking-tighter">ATELIER<span className="text-[var(--indian-maroon)] gold-glow"> HUB</span></h1>
+              <h1 className="text-5xl md:text-8xl font-serif font-bold italic tracking-tighter">ATELIER<span className="text-[var(--indian-maroon)] gold-glow"> HUB</span></h1>
            </div>
            
            <div className="flex flex-wrap gap-4">
-              {['inventory', 'orders', 'banners', 'discounts'].map(tab => (
+              {['inventory', 'orders', 'banners'].map(tab => (
                  <button 
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] transition-all ${activeTab === tab ? 'bg-[var(--indian-maroon)] text-[var(--indian-gold)] shadow-xl' : 'bg-white text-gray-400'}`}
+                    className={`px-10 py-5 rounded-full text-[11px] font-bold uppercase tracking-[0.3em] transition-all ${activeTab === tab ? 'bg-[var(--indian-maroon)] text-[var(--indian-gold)] shadow-xl' : 'bg-white text-gray-400 border border-gray-100'}`}
                  >
                     {tab}
                  </button>
@@ -193,10 +225,10 @@ export default function AdminPage() {
               <div className="flex items-center justify-between mb-12">
                  <h2 className="text-3xl font-serif font-bold uppercase italic">Manage Archive</h2>
                  <button 
-                    onClick={() => setIsAddingProduct(!isAddingProduct)}
+                    onClick={() => { setIsAddingProduct(!isAddingProduct); setIsEditingProduct(null); setNewProduct({ name: '', price: '', stock: 0, image: '', sizes: ['M'], category: 'Fusion', description: '' }); }}
                     className="bg-[var(--indian-midnight)] text-white px-10 py-5 rounded-full text-[10px] font-bold uppercase tracking-[0.4em] hover:bg-[var(--indian-gold)] hover:scale-105 transition-all shadow-xl"
                  >
-                    {isAddingProduct ? 'Cancel Drop' : '+ New Commission Piece'}
+                    {isAddingProduct ? 'Cancel' : '+ New Piece'}
                  </button>
               </div>
 
@@ -205,7 +237,7 @@ export default function AdminPage() {
                     <div className="space-y-8">
                        <input type="text" placeholder="Piece Name" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
                        <input type="text" placeholder="Price (₹)" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
-                       <input type="number" placeholder="Stock" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
+                       <input type="number" placeholder="Stock Level" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
                        
                        <div className="pt-4">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Atelier Sizes</p>
@@ -218,32 +250,41 @@ export default function AdminPage() {
                              ))}
                           </div>
                        </div>
-
-                       <div className="pt-4">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Archive Category</p>
-                          <div className="flex gap-4">
-                             {['Apparel', 'Cargo', 'Accessories', 'Fusion'].map(c => (
-                                <button key={c} type="button" onClick={() => setNewProduct({...newProduct, category: c})} className={`px-6 py-2 rounded-full text-[9px] font-bold uppercase transition-all ${newProduct.category === c ? 'bg-[var(--indian-gold)] text-white' : 'bg-gray-100 text-gray-400'}`}>{c}</button>
-                             ))}
-                          </div>
-                       </div>
                     </div>
                     
                     <div className="flex flex-col gap-8">
                        <textarea placeholder="The Story behind this piece..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full bg-gray-50 p-8 rounded-[30px] h-40 outline-none border border-transparent focus:border-[var(--indian-gold)]/30 transition-all font-serif italic" />
-                       <input type="text" placeholder="Image URL (or upload below)" value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-sm font-bold italic outline-none focus:border-[var(--indian-gold)] transition-all" />
-                       <button type="submit" className="w-full bg-[var(--indian-maroon)] text-[var(--indian-gold)] py-6 rounded-full font-bold uppercase text-[11px] tracking-[0.4em] hover:bg-[var(--indian-gold)] hover:text-white hover:scale-105 transition-all shadow-[0_20px_40px_rgba(212,175,55,0.2)]">Publish to Archive</button>
+                       
+                       <div className="space-y-4">
+                          <input type="text" placeholder="Image URL (Manual)" value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})} className="w-full bg-white border border-gray-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:border-[var(--indian-gold)] transition-all" />
+                          <div className="relative group">
+                             <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Upload Image" />
+                             <div className="w-full bg-[var(--indian-gold)]/10 border-2 border-dashed border-[var(--indian-gold)]/30 py-4 text-center rounded-2xl text-[9px] font-bold uppercase tracking-widest text-[var(--indian-gold)] group-hover:bg-[var(--indian-gold)]/20 transition-all">
+                                ☁️ Upload Visual File
+                             </div>
+                          </div>
+                          {newProduct.image && (
+                             <img src={newProduct.image} className="w-20 h-20 object-cover rounded-xl mt-4 border border-[var(--indian-gold)]/20 shadow-lg" alt="Preview" />
+                          )}
+                       </div>
+
+                       <button type="submit" className="w-full bg-[var(--indian-maroon)] text-[var(--indian-gold)] py-6 rounded-full font-bold uppercase text-[11px] tracking-[0.4em] hover:bg-[var(--indian-gold)] hover:text-white transition-all shadow-xl">
+                          {isEditingProduct ? 'Update Piece' : 'Publish Piece'}
+                       </button>
                     </div>
                  </form>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
                  {inventory.map(item => (
-                    <div key={item.id} className="glass-card rounded-[40px] overflow-hidden group hover:shadow-2xl transition-all border border-gray-100/50">
-                       <div className="aspect-square bg-gray-50 relative">
+                    <div key={item.id} className="glass-card rounded-[40px] overflow-hidden group hover:shadow-2xl transition-all border border-gray-100/50 relative">
+                       <div className="aspect-square bg-gray-50 relative overflow-hidden">
                           <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" />
+                          <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                             <button onClick={() => handleEditProduct(item)} className="bg-white/80 backdrop-blur-md p-4 rounded-full text-[var(--indian-maroon)] hover:bg-[var(--indian-gold)] transition-all shadow-xl">✎</button>
+                          </div>
                           <div className="absolute bottom-6 left-6 bg-white/40 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-[var(--indian-maroon)]">
-                             <p className="text-[8px] font-bold uppercase tracking-widest mb-1 opacity-60">Inventory</p>
+                             <p className="text-[8px] font-bold uppercase tracking-widest mb-1 opacity-60">Level</p>
                              <p className="text-xl font-serif font-bold italic tracking-tighter">{item.stock}</p>
                           </div>
                        </div>
@@ -263,27 +304,28 @@ export default function AdminPage() {
               <h2 className="text-3xl font-serif font-bold uppercase italic mb-12">Commissions Feed</h2>
               <div className="space-y-6">
                  {orders.map(order => (
-                    <div key={order.id} className="glass-card p-10 rounded-[40px] border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-10 hover:shadow-xl transition-all">
+                    <div key={order._id} className="glass-card p-10 rounded-[40px] border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-10 hover:shadow-xl transition-all pointer-events-auto">
                        <div className="flex items-center gap-8 flex-1">
                           <div className="w-16 h-16 glass-midnight rounded-full flex items-center justify-center text-[var(--indian-gold)] font-bold tracking-tighter shadow-xl">
-                             {order.id.slice(1,3)}
+                             #{order._id.slice(-4).toUpperCase()}
                           </div>
                           <div>
                              <h4 className="text-xl font-serif font-bold uppercase tracking-tight">{order.user}</h4>
-                             <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-400 mt-1">{order.id} • {order.date}</p>
+                             <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-400 mt-1">{order.date}</p>
                           </div>
                        </div>
                        
                        <div className="flex-1 text-center">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--indian-gold)] mb-1">Status</p>
-                          <span className={`text-[10px] font-bold uppercase tracking-[0.4em] px-6 py-2 rounded-full ring-1 ${order.status === 'Pending' ? 'bg-amber-50 text-amber-600 ring-amber-200' : 'bg-green-50 text-green-600 ring-green-200'}`}>
+                          <span className={`text-[9px] font-bold uppercase tracking-[0.4em] px-6 py-2 rounded-full border ${order.status === 'Accepted' || order.status === 'Processing' ? 'bg-[var(--indian-gold)]/10 text-[var(--indian-maroon)] border-[var(--indian-gold)]/30' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
                              {order.status}
                           </span>
                        </div>
 
-                       <div className="flex-1 text-right">
-                          <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-gray-300 mb-1">Total Commission</p>
+                       <div className="flex-1 text-right flex items-center justify-end gap-6">
                           <p className="text-2xl font-serif font-bold italic text-[var(--indian-maroon)]">{order.total}</p>
+                          <button onClick={() => setSelectedOrder(order)} className="bg-[var(--indian-midnight)] text-white p-4 rounded-full hover:bg-[var(--indian-gold)] transition-all">
+                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                          </button>
                        </div>
                     </div>
                  ))}
@@ -291,72 +333,90 @@ export default function AdminPage() {
            </div>
         )}
 
-        {activeTab === 'banners' && (
-           <div className="animate-fade-in-up">
-              <div className="flex items-center justify-between mb-12">
-                 <h2 className="text-3xl font-serif font-bold uppercase italic">Hero Displays</h2>
-                 <button 
-                    onClick={() => setIsAddingBanner(!isAddingBanner)}
-                    className="bg-[var(--indian-midnight)] text-white px-10 py-5 rounded-full text-[10px] font-bold uppercase tracking-[0.4em] hover:bg-[var(--indian-gold)] hover:scale-105 transition-all shadow-xl"
-                 >
-                    {isAddingBanner ? 'Cancel' : '+ New Banner Drop'}
-                 </button>
-              </div>
-
-              {isAddingBanner && (
-                 <form onSubmit={handleSaveBanner} className="glass-card p-12 rounded-[50px] mb-20 grid grid-cols-1 md:grid-cols-2 gap-12 border-2 border-[var(--indian-gold)]/20 shadow-2xl animate-fade-in-up">
-                    <div className="space-y-8">
-                       <input type="text" placeholder="Banner Title" value={newBanner.title} onChange={e => setNewBanner({...newBanner, title: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
-                       <input type="text" placeholder="Banner Visual URL" value={newBanner.image} onChange={e => setNewBanner({...newBanner, image: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-sm font-bold italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
-                       <select value={newBanner.linkProductId} onChange={e => setNewBanner({...newBanner, linkProductId: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-sm font-bold italic outline-none focus:border-[var(--indian-gold)]">
-                          <option value="">Link to Product (None)</option>
-                          {inventory.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                       </select>
+        {/* ORDER DETAILS MODAL */}
+        {selectedOrder && (
+           <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 md:p-12">
+              <div className="absolute inset-0 bg-[#0a0a0b]/80 backdrop-blur-md" onClick={() => setSelectedOrder(null)}></div>
+              <div className="relative w-full max-w-4xl max-h-full overflow-y-auto no-scrollbar bg-[var(--indian-cream)] rounded-[50px] shadow-2xl border-2 border-[var(--indian-gold)]/30 animate-fade-in-up">
+                 <div className="p-12 md:p-20">
+                    <div className="flex flex-col md:flex-row justify-between gap-12 mb-16 pb-12 border-b border-gray-100">
+                       <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.6em] text-[var(--indian-gold)] mb-4 italic">Order Record</p>
+                          <h2 className="text-5xl font-serif font-bold italic tracking-tighter uppercase">{selectedOrder.user}</h2>
+                          <p className="text-sm font-serif italic text-gray-400 mt-2">{selectedOrder.email} • {selectedOrder.phone}</p>
+                       </div>
+                       <button onClick={() => handleResendInvoice(selectedOrder._id, selectedOrder.email)} className="h-fit bg-[var(--indian-maroon)] text-[var(--indian-gold)] px-10 py-5 rounded-full text-[10px] font-bold uppercase tracking-[0.4em] hover:bg-white transition-all shadow-xl">
+                          Resend Digital Bill 📧
+                       </button>
                     </div>
-                    <div className="flex flex-col justify-end">
-                       <button type="submit" className="w-full bg-[var(--indian-maroon)] text-[var(--indian-gold)] py-6 rounded-full font-bold uppercase text-[11px] tracking-[0.4em] hover:bg-[var(--indian-gold)] hover:text-white transition-all shadow-xl">Activate Display</button>
-                    </div>
-                 </form>
-              )}
 
-              <div className="grid grid-cols-1 gap-12">
-                 {banners.map(banner => (
-                    <div key={banner._id} className="glass-card rounded-[50px] overflow-hidden relative h-[400px] border border-gray-100">
-                       <img src={banner.image} className="w-full h-full object-cover" />
-                       <div className="absolute inset-0 bg-black/40 flex flex-col justify-center p-12 text-white">
-                          <h3 className="text-4xl md:text-6xl font-serif font-bold italic tracking-tighter mb-8">{banner.title}</h3>
-                          <div className="flex gap-4">
-                             <button onClick={() => handleDeleteBanner(banner._id)} className="px-8 py-3 bg-red-600/80 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest">Delete Drop</button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
+                       <div className="space-y-12">
+                          <div>
+                             <h4 className="text-[11px] font-bold uppercase tracking-[0.4em] text-gray-400 mb-6">Archive Dispatch Information</h4>
+                             <p className="text-lg font-serif italic leading-relaxed text-gray-600">{selectedOrder.address}</p>
+                          </div>
+                          
+                          <div>
+                             <h4 className="text-[11px] font-bold uppercase tracking-[0.4em] text-gray-400 mb-6">Piece Breakdown</h4>
+                             <div className="space-y-6">
+                                {selectedOrder.items.map((item: any, i: number) => (
+                                   <div key={i} className="flex gap-6 items-center bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                                      <div className="w-16 h-20 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 grow-0 shrink-0">
+                                         <img src={item.image || 'https://images.unsplash.com/photo-1558769132-cb1fac0840c2?w=100'} className="w-full h-full object-cover" />
+                                      </div>
+                                      <div>
+                                         <p className="text-sm font-serif font-bold italic tracking-tight">{item.name}</p>
+                                         <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[var(--indian-gold)] mt-1">Size: {item.size || 'N/A'} × {item.quantity || 1}</p>
+                                      </div>
+                                   </div>
+                                ))}
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="glass-card p-10 rounded-[40px] border border-[var(--indian-gold)]/20 shadow-xl h-fit sticky top-0">
+                          <h4 className="text-[11px] font-bold uppercase tracking-[0.4em] text-[var(--indian-maroon)] mb-10 pb-4 border-b border-[var(--indian-maroon)]/10 text-center">Digital Registry Status</h4>
+                          
+                          <div className="space-y-8">
+                             <div>
+                                <label className="text-[8px] font-bold uppercase tracking-widest text-gray-400 block mb-4">Update Status Protocol</label>
+                                <div className="flex flex-wrap gap-2">
+                                   {['Accepted', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map(st => (
+                                      <button key={st} onClick={() => setSelectedOrder({...selectedOrder, status: st})} className={`px-4 py-2 rounded-full text-[8px] font-bold uppercase transition-all ${selectedOrder.status === st ? 'bg-[var(--indian-maroon)] text-white' : 'bg-gray-100 text-gray-400'}`}>{st}</button>
+                                   ))}
+                                </div>
+                             </div>
+
+                             <div className="space-y-4">
+                                <div>
+                                   <label className="text-[8px] font-bold uppercase tracking-widest text-gray-400 block mb-2">Courier Feed</label>
+                                   <input type="text" value={selectedOrder.courier} onChange={e => setSelectedOrder({...selectedOrder, courier: e.target.value})} className="w-full bg-white border border-gray-100 py-3 px-5 rounded-xl text-xs font-bold outline-none focus:border-[var(--indian-gold)]" placeholder="e.g. Delhivery, BlueDart" />
+                                </div>
+                                <div>
+                                   <label className="text-[8px] font-bold uppercase tracking-widest text-gray-400 block mb-2">Registry Tracking ID</label>
+                                   <input type="text" value={selectedOrder.trackingId} onChange={e => setSelectedOrder({...selectedOrder, trackingId: e.target.value})} className="w-full bg-white border border-gray-100 py-3 px-5 rounded-xl text-xs font-bold outline-none focus:border-[var(--indian-gold)]" placeholder="Tracking Number" />
+                                </div>
+                             </div>
+
+                             <button 
+                                onClick={() => handleUpdateOrderStatus(selectedOrder._id, selectedOrder.status, selectedOrder.courier, selectedOrder.trackingId)}
+                                className="w-full bg-[var(--indian-midnight)] text-[var(--indian-gold)] py-5 rounded-full font-bold uppercase text-[10px] tracking-[0.3em] hover:bg-white transition-all shadow-[0_10px_30px_rgba(0,0,0,0.1)] border border-transparent hover:border-[var(--indian-gold)]/30"
+                             >
+                                Confirm Registry Update
+                             </button>
                           </div>
                        </div>
                     </div>
-                 ))}
+                 </div>
               </div>
            </div>
         )}
-
-        {activeTab === 'discounts' && (
-           <div className="animate-fade-in-up">
-              <h2 className="text-3xl font-serif font-bold uppercase italic mb-12">Privilege Codes</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                 {discounts.map(d => (
-                    <div key={d.code} className="glass-card p-10 rounded-[40px] border border-gray-100 text-center relative overflow-hidden group">
-                       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-[var(--indian-gold)]"></div>
-                       <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-gray-400 mb-4 italic">Active Privilege</p>
-                       <h3 className="text-4xl font-serif font-bold tracking-widest text-[var(--indian-maroon)] mb-2">{d.code}</h3>
-                       <p className="text-sm font-bold text-gray-400 mb-8">{d.type === 'percentage' ? `${d.amount}% OFF` : `₹${d.amount} OFF`}</p>
-                       <button className="text-[9px] font-bold uppercase tracking-widest text-red-500 opacity-0 group-hover:opacity-100 transition-all">Deactivate Code</button>
-                    </div>
-                 ))}
-              </div>
-           </div>
-        )}
-
       </main>
 
       {/* ADMIN BOTTOM COMMAND BAR (MOBILE) */}
       <nav className="md:hidden fixed bottom-8 left-6 right-6 glass-midnight rounded-full border border-white/10 p-4 flex justify-around items-center shadow-2xl z-[200]">
-         {['inventory', 'orders', 'banners', 'discounts'].map(tab => (
+         {['inventory', 'orders', 'banners'].map(tab => (
             <button 
                key={tab}
                onClick={() => setActiveTab(tab)} 

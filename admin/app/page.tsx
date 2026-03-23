@@ -14,9 +14,13 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [isEditingProduct, setIsEditingProduct] = useState<string | null>(null);
   const [isAddingBanner, setIsAddingBanner] = useState(false);
   const [isReady, setIsReady] = useState(false);
   
+  // Modals
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+
   const [newProduct, setNewProduct] = useState({
     name: '',
     price: '',
@@ -50,10 +54,16 @@ export default function AdminDashboard() {
         id: `#${o._id.slice(-6).toUpperCase()}`,
         _id: o._id,
         user: o.customerDetails?.name || 'Member',
+        email: o.customerDetails?.email,
+        phone: o.customerDetails?.phone,
+        address: o.customerDetails?.address,
         total: `₹${o.totalAmount}`,
         status: o.orderStatus || 'Pending',
-        item: o.items?.[0]?.name || 'Luxury Archive',
+        item: o.items?.[0]?.name || 'Archive Item',
+        items: o.items || [],
         date: new Date(o.createdAt).toLocaleString(),
+        courier: o.shippingDetails?.courier || '',
+        trackingId: o.shippingDetails?.trackingId || '',
         customerDetails: o.customerDetails
       })));
 
@@ -77,11 +87,25 @@ export default function AdminDashboard() {
     else alert('Invalid Access Code');
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+         setNewProduct(prev => ({ ...prev, image: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    const url = isEditingProduct ? `${API_URL}/api/products/${isEditingProduct}` : `${API_URL}/api/products`;
+    const method = isEditingProduct ? 'PUT' : 'POST';
+
     try {
-      const res = await fetch(`${API_URL}/api/products`, {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
            ...newProduct,
@@ -91,34 +115,51 @@ export default function AdminDashboard() {
       });
       if (res.ok) {
         setIsAddingProduct(false);
+        setIsEditingProduct(null);
         fetchArchive();
         setNewProduct({ name: '', price: '', stock: 0, image: '', sizes: ['M'], category: 'Fusion', description: '' });
       }
     } catch (err) { alert('Failed to Publish Piece'); }
   };
 
-  const handleSaveBanner = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${API_URL}/api/banners`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newBanner)
-      });
-      if (res.ok) {
-        setIsAddingBanner(false);
-        fetchArchive();
-        setNewBanner({ title: '', image: '', linkProductId: '', active: true });
-      }
-    } catch (err) { alert('Failed to Publish Banner'); }
+  const handleEditProduct = (p: any) => {
+    setNewProduct({
+       name: p.name,
+       price: p.price.toString(),
+       stock: p.stock,
+       image: p.image,
+       sizes: p.sizes,
+       category: p.category,
+       description: p.description
+    });
+    setIsEditingProduct(p.id);
+    setIsAddingProduct(true);
   };
 
-  const handleDeleteBanner = async (id: string) => {
-    if (!confirm('Abort this banner?')) return;
+  const handleUpdateOrderStatus = async (orderId: string, status: string, courier: string, trackingId: string) => {
     try {
-      await fetch(`${API_URL}/api/banners/${id}`, { method: 'DELETE' });
-      fetchArchive();
-    } catch (err) { alert('Delete Failure'); }
+       const res = await fetch(`${API_URL}/api/orders/${orderId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status, courier, trackingId })
+       });
+       if (res.ok) {
+          setSelectedOrder(null);
+          fetchArchive();
+          alert(`Order Protocol Update: ${status}`);
+       }
+    } catch (err) { alert('Transmission Failure'); }
+  };
+
+  const handleResendInvoice = async (orderId: string, email: string) => {
+    try {
+       const res = await fetch(`${API_URL}/api/orders/resend-invoice`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, overrideEmail: email })
+       });
+       if (res.ok) alert('Atelier Dispatch Hub: Digital Bill Sent!');
+    } catch (err) { alert('Dispatch Hub Error'); }
   };
 
   if (!isAuthenticated) {
@@ -188,9 +229,9 @@ export default function AdminDashboard() {
         {activeTab === 'inventory' && (
            <div className="animate-fade-in-up">
               <div className="flex items-center justify-between mb-12">
-                 <h2 className="text-3xl font-serif font-bold uppercase italic">Manage Archive</h2>
-                 <button onClick={() => setIsAddingProduct(!isAddingProduct)} className="bg-[#0a0a0b] text-white px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#d4af37] transition-all shadow-xl">
-                   {isAddingProduct ? 'Cancel' : '+ New commission'}
+                 <h2 className="text-3xl font-serif font-bold uppercase italic">Manage Pieces</h2>
+                 <button onClick={() => { setIsAddingProduct(!isAddingProduct); setIsEditingProduct(null); setNewProduct({ name: '', price: '', stock: 0, image: '', sizes: ['M'], category: 'Fusion', description: '' }); }} className="bg-[#0a0a0b] text-white px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#d4af37] transition-all shadow-xl">
+                   {isAddingProduct ? 'Cancel' : '+ New Commission'}
                  </button>
               </div>
 
@@ -200,6 +241,7 @@ export default function AdminDashboard() {
                        <input type="text" placeholder="Piece Name" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[#d4af37] transition-all" required />
                        <input type="text" placeholder="Price (₹)" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[#d4af37] transition-all" required />
                        <input type="number" placeholder="Stock Level" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[#d4af37] transition-all" required />
+                       
                        <div className="pt-4">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Available Sizes</p>
                           <div className="flex gap-2">
@@ -214,17 +256,32 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex flex-col gap-8">
                        <textarea placeholder="The design story..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full bg-gray-50 p-8 rounded-[30px] h-40 outline-none focus:border-[#d4af37]/30 transition-all font-serif italic" />
-                       <input type="text" placeholder="Main Visual URL" value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-3 text-xs font-bold italic outline-none focus:border-[#d4af37]" />
-                       <button type="submit" className="w-full bg-[#800000] text-[#d4af37] py-6 rounded-full font-bold uppercase text-[10px] tracking-[0.4em] hover:bg-[#d4af37] hover:text-white transition-all shadow-xl">Publish to Archive</button>
+                       
+                       <div className="space-y-4">
+                          <input type="text" placeholder="Main Visual URL" value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})} className="w-full bg-white border border-gray-100 py-4 px-6 rounded-2xl text-xs font-bold italic outline-none focus:border-[#d4af37]" />
+                          <div className="relative group">
+                             <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                             <div className="w-full bg-[#d4af37]/10 border-2 border-dashed border-[#d4af37]/30 py-4 text-center rounded-2xl text-[9px] font-bold uppercase tracking-widest text-[#d4af37] group-hover:bg-[#d4af37]/20 transition-all">
+                                ☁️ Upload Visual File
+                             </div>
+                          </div>
+                       </div>
+
+                       <button type="submit" className="w-full bg-[#800000] text-[#d4af37] py-6 rounded-full font-bold uppercase text-[10px] tracking-[0.4em] hover:bg-[#d4af37] hover:text-white transition-all shadow-xl">
+                          {isEditingProduct ? 'Update Piece' : 'Publish to Archive'}
+                       </button>
                     </div>
                  </form>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                  {inventory.map(item => (
-                    <div key={item.id} className="bg-white rounded-[40px] border border-gray-100 overflow-hidden group hover:shadow-2xl transition-all">
+                    <div key={item.id} className="bg-white rounded-[40px] border border-gray-100 overflow-hidden group hover:shadow-2xl transition-all relative">
                        <div className="aspect-square relative overflow-hidden bg-gray-50">
                           <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" />
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all">
+                             <button onClick={() => handleEditProduct(item)} className="bg-white/90 p-3 rounded-full shadow-lg text-sm">✎</button>
+                          </div>
                        </div>
                        <div className="p-8">
                           <h3 className="text-xl font-serif font-bold uppercase tracking-tight mb-2">{item.name}</h3>
@@ -244,18 +301,21 @@ export default function AdminDashboard() {
               <h2 className="text-3xl font-serif font-bold uppercase italic mb-12">Open Commissions</h2>
               <div className="space-y-6">
                  {orders.map(order => (
-                    <div key={order.id} className="bg-white p-10 rounded-[40px] border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-10 hover:shadow-xl transition-all">
+                    <div key={order._id} className="bg-white p-10 rounded-[40px] border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-10 hover:shadow-xl transition-all">
                        <div className="flex-1">
                           <h4 className="text-xl font-serif font-bold uppercase tracking-tight">{order.user}</h4>
-                          <p className="text-[10px] uppercase tracking-[0.4em] text-gray-300 mt-1">{order.id} • {order.date}</p>
+                          <p className="text-[10px] uppercase tracking-[0.4em] text-gray-300 mt-1">#{order._id.slice(-6).toUpperCase()} • {order.date}</p>
                        </div>
                        <div className="flex-1 text-center">
-                          <span className={`text-[10px] font-bold uppercase tracking-[0.3em] px-8 py-3 rounded-full border ${order.status === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-green-50 text-green-600 border-green-200'}`}>
+                          <span className={`text-[9px] font-bold uppercase tracking-[0.3em] px-8 py-3 rounded-full border ${order.status === 'Accepted' || order.status === 'Processing' ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-green-50 text-green-600 border-green-200'}`}>
                              {order.status}
                           </span>
                        </div>
-                       <div className="flex-1 text-right">
+                       <div className="flex-1 text-right flex items-center justify-end gap-6">
                           <p className="text-2xl font-serif font-bold italic text-[#800000]">{order.total}</p>
+                          <button onClick={() => setSelectedOrder(order)} className="bg-[#0a0a0b] text-white p-3 rounded-full">
+                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                          </button>
                        </div>
                     </div>
                  ))}
@@ -263,39 +323,60 @@ export default function AdminDashboard() {
            </div>
         )}
 
-        {activeTab === 'banners' && (
-           <div className="animate-fade-in-up">
-              <div className="flex items-center justify-between mb-12">
-                 <h2 className="text-3xl font-serif font-bold uppercase italic">Hero Displays</h2>
-                 <button onClick={() => setIsAddingBanner(!isAddingBanner)} className="bg-[#0a0a0b] text-white px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#d4af37] transition-all shadow-xl">
-                   {isAddingBanner ? 'Cancel' : '+ New Display Drop'}
-                 </button>
-              </div>
-
-              {isAddingBanner && (
-                 <form onSubmit={handleSaveBanner} className="bg-white p-12 rounded-[50px] border-2 border-[#d4af37]/20 shadow-2xl mb-20 grid grid-cols-1 md:grid-cols-2 gap-12">
-                    <div className="space-y-8">
-                       <input type="text" placeholder="Banner Title" value={newBanner.title} onChange={e => setNewBanner({...newBanner, title: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[#d4af37] transition-all" required />
-                       <input type="text" placeholder="Main Visual URL" value={newBanner.image} onChange={e => setNewBanner({...newBanner, image: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-sm font-bold italic outline-none focus:border-[#d4af37]" required />
+        {selectedOrder && (
+           <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}></div>
+              <div className="relative w-full max-w-3xl bg-white rounded-[50px] shadow-2xl p-12 overflow-y-auto max-h-[90vh] no-scrollbar">
+                 <div className="flex justify-between items-start mb-12 pb-8 border-b border-gray-100">
+                    <div>
+                       <h3 className="text-4xl font-serif font-bold italic">{selectedOrder.user}</h3>
+                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">{selectedOrder.email} • {selectedOrder.phone}</p>
                     </div>
-                    <div className="flex flex-col justify-end">
-                       <button type="submit" className="w-full bg-[#800000] text-[#d4af37] py-6 rounded-full font-bold uppercase text-[10px] tracking-[0.4em] hover:bg-[#d4af37] hover:text-white transition-all shadow-xl">Activate Display</button>
-                    </div>
-                 </form>
-              )}
+                    <button onClick={() => handleResendInvoice(selectedOrder._id, selectedOrder.email)} className="bg-[#800000] text-[#d4af37] px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg">Resend Bill</button>
+                 </div>
 
-              <div className="grid grid-cols-1 gap-12">
-                 {banners.map(banner => (
-                    <div key={banner._id} className="bg-white rounded-[50px] overflow-hidden relative h-[400px] border border-gray-100">
-                       <img src={banner.image} className="w-full h-full object-cover" />
-                       <div className="absolute inset-0 bg-black/40 flex flex-col justify-center p-12 text-white">
-                          <h3 className="text-4xl md:text-6xl font-serif font-bold italic tracking-tighter mb-8">{banner.title}</h3>
-                          <div className="flex gap-4">
-                             <button onClick={() => handleDeleteBanner(banner._id)} className="px-10 py-4 bg-red-600/80 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-white hover:text-red-600 transition-all">Abort Display</button>
-                          </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div>
+                       <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-300 mb-4">Location Feed</h5>
+                       <p className="text-sm font-serif italic text-gray-600">{selectedOrder.address}</p>
+                       
+                       <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-300 mb-4 mt-8">Items</h5>
+                       <div className="space-y-4">
+                          {selectedOrder.items.map((it: any, i: number) => (
+                             <div key={i} className="flex gap-4 items-center bg-gray-50 p-4 rounded-3xl border border-gray-100">
+                                <div className="text-[10px] font-bold text-[#800000]">{i+1}</div>
+                                <div className="flex-1">
+                                   <p className="text-xs font-serif font-bold tracking-tight">{it.name}</p>
+                                   <p className="text-[8px] font-bold text-gray-400 mt-1 uppercase tracking-widest">Qty {it.quantity} • Size {it.size}</p>
+                                </div>
+                             </div>
+                          ))}
                        </div>
                     </div>
-                 ))}
+
+                    <div className="bg-gray-50 p-8 rounded-[40px] border border-gray-100">
+                       <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-8 border-b border-gray-200 pb-2">Status Control</h5>
+                       <div className="space-y-6">
+                          <div>
+                             <label className="text-[8px] font-bold text-gray-400 uppercase block mb-3">Courier Hub</label>
+                             <input type="text" value={selectedOrder.courier} onChange={e => setSelectedOrder({...selectedOrder, courier: e.target.value})} className="w-full bg-white border border-gray-200 p-3 rounded-xl text-xs outline-none focus:border-[#d4af37]" />
+                          </div>
+                          <div>
+                             <label className="text-[8px] font-bold text-gray-400 uppercase block mb-3">Tracking Feed</label>
+                             <input type="text" value={selectedOrder.trackingId} onChange={e => setSelectedOrder({...selectedOrder, trackingId: e.target.value})} className="w-full bg-white border border-gray-200 p-3 rounded-xl text-xs outline-none focus:border-[#d4af37]" />
+                          </div>
+                          <div>
+                             <label className="text-[8px] font-bold text-gray-400 uppercase block mb-3">Atelier Step</label>
+                             <div className="flex flex-wrap gap-2">
+                                {['Accepted', 'Processing', 'Shipped', 'Delivered'].map(st => (
+                                   <button key={st} onClick={() => setSelectedOrder({...selectedOrder, status: st})} className={`px-4 py-2 rounded-full text-[8px] font-bold uppercase transition-all ${selectedOrder.status === st ? 'bg-[#800000] text-[#d4af37]' : 'bg-white text-gray-300'}`}>{st}</button>
+                                ))}
+                             </div>
+                          </div>
+                          <button onClick={() => handleUpdateOrderStatus(selectedOrder._id, selectedOrder.status, selectedOrder.courier, selectedOrder.trackingId)} className="w-full bg-[#0a0a0b] text-[#d4af37] py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] shadow-xl mt-4">Confirm Protocol Update</button>
+                       </div>
+                    </div>
+                 </div>
               </div>
            </div>
         )}
