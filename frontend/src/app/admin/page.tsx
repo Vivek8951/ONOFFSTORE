@@ -178,20 +178,32 @@ export default function AdminPage() {
 
               {isAddingProduct && (
                  <form onSubmit={handleSaveProduct} className="glass-card p-12 rounded-[50px] mb-20 grid grid-cols-1 md:grid-cols-2 gap-12 border-2 border-[var(--indian-gold)]/20 shadow-2xl animate-fade-in-up">
-                    <div className="space-y-8">
-                       <input type="text" placeholder="Piece Name" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
-                       <input type="text" placeholder="Price (₹)" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
-                       <input type="number" placeholder="Stock" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
-                       
-                       <div className="pt-4">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Archive Category</p>
-                          <div className="flex gap-4">
-                             {['Apparel', 'Cargo', 'Accessories', 'Fusion'].map(c => (
-                                <button key={c} type="button" onClick={() => setNewProduct({...newProduct, category: c})} className={`px-6 py-2 rounded-full text-[9px] font-bold uppercase transition-all ${newProduct.category === c ? 'bg-[var(--indian-gold)] text-white' : 'bg-gray-100 text-gray-400'}`}>{c}</button>
-                             ))}
-                          </div>
-                       </div>
-                    </div>
+                     <div className="space-y-8">
+                        <input type="text" placeholder="Piece Name" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
+                        <input type="text" placeholder="Price (₹)" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
+                        <input type="number" placeholder="Stock" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: parseInt(e.target.value)})} className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-serif italic outline-none focus:border-[var(--indian-gold)] transition-all" required />
+                        
+                        <div className="pt-4">
+                           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Atelier Sizes</p>
+                           <div className="flex gap-2">
+                              {['S', 'M', 'L', 'XL', 'XXL'].map(sz => (
+                                 <button key={sz} type="button" onClick={() => {
+                                    const newSizes = newProduct.sizes.includes(sz) ? newProduct.sizes.filter(s => s !== sz) : [...newProduct.sizes, sz];
+                                    setNewProduct({...newProduct, sizes: newSizes});
+                                 }} className={`w-10 h-10 rounded-full text-[10px] font-bold transition-all border ${newProduct.sizes.includes(sz)?'bg-[var(--indian-maroon)] text-white border-transparent':'bg-white text-gray-300 border-gray-100'}`}>{sz}</button>
+                              ))}
+                           </div>
+                        </div>
+
+                        <div className="pt-4">
+                           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Archive Category</p>
+                           <div className="flex gap-4">
+                              {['Apparel', 'Cargo', 'Accessories', 'Fusion'].map(c => (
+                                 <button key={c} type="button" onClick={() => setNewProduct({...newProduct, category: c})} className={`px-6 py-2 rounded-full text-[9px] font-bold uppercase transition-all ${newProduct.category === c ? 'bg-[var(--indian-gold)] text-white' : 'bg-gray-100 text-gray-400'}`}>{c}</button>
+                              ))}
+                           </div>
+                        </div>
+                     </div>
                     
                     <div className="flex flex-col gap-8">
                        <textarea placeholder="The Story behind this piece..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full bg-gray-50 p-8 rounded-[30px] h-40 outline-none border border-transparent focus:border-[var(--indian-gold)]/30 transition-all font-serif italic" />
