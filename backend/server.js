@@ -1,4 +1,4 @@
-// ❤️ ONOFF STORE V2
+// ❤️ ONOFF STORE V2 - SUPABASE EDITION (Fastest Hub)
 const dns = require('dns');
 // 💡 CLOUD-HARDENED DNS: Force IPv4 and use Google Resolvers (8.8.8.8)
 dns.setServers(['8.8.8.8', '8.8.4.4']);
@@ -6,7 +6,6 @@ dns.setDefaultResultOrder('ipv4first');
 
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const Razorpay = require('razorpay');
 const { google } = require('googleapis');
@@ -18,60 +17,27 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// Route imports
-const productRoutes = require('./src/routes/productRoutes');
-const authRoutes = require('./src/routes/authRoutes');
-const bannerRoutes = require('./src/routes/bannerRoutes');
-const Order = require('./src/models/Order');
-
 const app = express();
 
 app.use(cors({
-  origin: '*', // Allow all origins explicitly
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Increase body size limits for base64 images and invoice payloads
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
-// Friendly payload error handler
-app.use((err, req, res, next) => {
-  if (err && err.type === 'entity.too.large') {
-    return res.status(413).json({ error: 'Payload too large. Please upload smaller files or send image URLs.' });
-  }
-  next(err);
-});
-
-// 1. Connect to MongoDB with Enhanced Stability
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/onoff_store';
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ Connected to MongoDB (SMARTON Database Ready)'))
-  .catch(err => {
-    console.error('❌ MongoDB Connection Error:', err.message);
-    console.log('💡 TIP: Check if your IP is whitelisted in MongoDB Atlas Network Security.');
-  });
-
-
-// 2. Razorpay Initialization
+// 1. Razorpay Initialization
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_onoff_fallback',
   key_secret: process.env.RAZORPAY_SECRET || 'fallback_secret'
 });
 
-
-// 3. Mount Routes
-app.use('/api/products', productRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/banners', bannerRoutes);
-
-
 const { generateInvoicePDF } = require('./src/services/PDFService');
 const stream = require('stream');
 
-// 3.5. Digital Dispatch Hub (Gmail API via HTTPS)
-// 💡 CLOUD-NATIVE: Using Google API (Port 443) to bypass Render port blocks.
+// 🔐 GMAIL DISPATCH HUB (Gmail API via HTTPS)
 const oauth2Client = new google.auth.OAuth2(
   process.env.GMAIL_CLIENT_ID,
   process.env.GMAIL_CLIENT_SECRET,
@@ -79,330 +45,149 @@ const oauth2Client = new google.auth.OAuth2(
 );
 
 oauth2Client.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
-
 const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-console.log('✅ ATELIER DISPATCH HUB READY (Gmail API Initialized)');
-
+console.log('✅ ATELIER SUPABASE DISPATCH HUB READY');
 
 const sendOrderConfirmation = (order) => {
   setImmediate(async () => {
     try {
-      console.log(`[ORDER SIGNAL] Deep processing email for Order: ${order._id}`);
-      const fileName = `SMARTON_INVOICE_${order._id.toString().slice(-6).toUpperCase()}.pdf`;
+      console.log(`[ORDER SIGNAL] Processing email for Order: ${order.id}`);
+      const fileName = `SMARTON_INVOICE_${order.id.slice(-6).toUpperCase()}.pdf`;
       
       const pdfStream = new stream.PassThrough();
+      // Adjust PDFService for Supabase order object
       generateInvoicePDF(order, pdfStream);
 
       const pdfBuffer = await new Promise((resolve, reject) => {
         const chunks = [];
         pdfStream.on('data', chunk => chunks.push(chunk));
-        pdfStream.on('end', () => resolve(Buffer.concat(chunks)));
         pdfStream.on('error', reject);
+        pdfStream.on('end', () => resolve(Buffer.concat(chunks)));
       });
 
-      // Format the email for Gmail API (Base64 Encoded RFC822)
-      const subject = `Order Confirmed & Digital Bill: #${order._id.toString().slice(-6).toUpperCase()}`;
-      const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
-      
-      const messageParts = [
-        `From: "SMARTON ATELIER" <${process.env.EMAIL_USER}>`,
-        `To: ${order.customerDetails?.email || 'vicvivek9@gmail.com'}`,
-        'Content-Type: multipart/mixed; boundary="foo_bar_baz"',
-        'MIME-Version: 1.0',
-        `Subject: ${utf8Subject}`,
+      const message = [
+        `To: ${order.customer_details.email}`,
+        'Subject: 🏛️ ATELIER HUB: Order Confirmation Received',
+        'Mime-Version: 1.0',
+        'Content-Type: multipart/mixed; boundary="boundary_foo"',
         '',
-        '--foo_bar_baz',
-        'Content-Type: text/html; charset="utf-8"',
-        'MIME-Version: 1.0',
-        'Content-Transfer-Encoding: 7bit',
+        '--boundary_foo',
+        'Content-Type: text/html; charset="UTF-8"',
         '',
-        `
-          <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px; border-radius: 10px; background: #fff;">
-            <h1 style="text-transform: uppercase; letter-spacing: 5px; text-align: center; color: #000;">SMARTON</h1>
-            <p style="text-align: center; font-size: 10px; tracking: 2px; color: #888;">BY ONOFF STORE</p>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-            <h2 style="font-size: 14px; text-transform: uppercase;">Purchase Confirmation</h2>
-            <p>Dear <b>${order.customerDetails?.name || 'Valued Member'}</b>,</p>
-            <p>Your luxury pieces from SMARTON have been confirmed. We have attached your **Official Digital Bill** as a PDF to this email.</p>
-            
-            <div style="background: #fbfbfb; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #f0f0f0;">
-              <p style="margin: 5px 0; font-size: 12px; color: #333;"><b>Order ID:</b> #${order._id.toString().slice(-8).toUpperCase()}</p>
-              <p style="margin: 5px 0; font-size: 12px; color: #8b0000;"><b>Amount Paid:</b> ₹${order.totalAmount}</p>
-            </div>
-
-            <p style="font-size: 12px; color: #666; font-style: italic;">Thank you for your refined choice.</p>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-            <p style="font-size: 10px; color: #aaa; text-align: center; text-transform: uppercase; letter-spacing: 2px;">© ${new Date().getFullYear()} SMARTON WORLDWIDE • ATELIER DISPATCH</p>
-          </div>
-        `,
+        `<div style="font-family: serif; color: #0a0a0b; padding: 40px; background: #faf9f6; border: 20px solid #800000;">
+           <h1 style="text-align: center; color: #800000; letter-spacing: 0.5em; text-transform: uppercase;">ONOFF</h1>
+           <p style="font-size: 18px; text-transform: uppercase; letter-spacing: 0.2em; text-align: center; color: #d4af37;">Confirmed Archive Arrival</p>
+           <p>Dear ${order.customer_details.name},</p>
+           <p>We have successfully archived your commission. Your order <strong>#${order.id.slice(-6).toUpperCase()}</strong> is now being processed within the Atelier Hub.</p>
+           <div style="background: #fff; padding: 20px; border: 1px solid #d4af37;">
+             <p>Total Commission: ${order.total_amount}</p>
+             <p>Status: Registered</p>
+           </div>
+           <p>Your digital certificate of purchase is attached below.</p>
+         </div>`,
         '',
-        '--foo_bar_baz',
+        '--boundary_foo',
         `Content-Type: application/pdf; name="${fileName}"`,
-        'Content-Description: Invoice PDF',
-        `Content-Disposition: attachment; filename="${fileName}"`,
         'Content-Transfer-Encoding: base64',
+        `Content-Disposition: attachment; filename="${fileName}"`,
         '',
         pdfBuffer.toString('base64'),
-        '--foo_bar_baz--',
-      ];
+        '',
+        '--boundary_foo--'
+      ].join('\r\n');
 
-      const rawMessage = messageParts.join('\n');
-      const encodedMessage = Buffer.from(rawMessage)
-        .toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-
-      await gmail.users.messages.send({
-        userId: 'me',
-        requestBody: { raw: encodedMessage },
-      });
-
-      console.log('[ORDER SIGNAL] Digital Bill successfully dispatched via Gmail API.');
-      await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `SECURE DISPATCHED: ${new Date().toLocaleTimeString()} (GMAIL-API)` } });
+      const encodedMessage = Buffer.from(message).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encodedMessage } });
+      console.log('✅ DIGITAL BILL DISPATCHED');
     } catch (err) {
-      console.error('[ORDER SIGNAL] Gmail API Transmission Failed:', err.message);
-      
-      let errorMsg = err.message;
-      if (err.message.includes('refresh_token')) {
-        errorMsg = "GMAIL API: Tokens expired. Please regenerate your Refresh Token.";
-      }
-      
-      await mongoose.model('Order').findByIdAndUpdate(order._id, { $push: { systemLogs: `API ERROR: ${errorMsg}` } });
+      console.error('❌ EMAIL SIGNAL ERROR:', err.message);
     }
-
   });
 };
 
-
-// 4. Order & Payment Routes
+// 🏛️ ORDER PROTOCOL (Supabase Hub)
 const orderRouter = express.Router();
 
-// User: Create an Order Intent (Checkout)
 orderRouter.post('/create', async (req, res) => {
   try {
-    const { items, customerDetails, totalAmount } = req.body;
-    
-    // 1. Save order to MongoDB first — always succeeds
-    const newOrder = new Order({
-      customerDetails,
-      items,
-      totalAmount,
-      orderStatus: 'Pending',
-      'paymentDetails.status': 'Pending'
-    });
-    await newOrder.save();
+    const { customerDetails, items, totalAmount } = req.body;
 
-    // 2. Try Razorpay — skip gracefully if keys are not configured
+    // 1. 🚀 SUPABASE HUB: Instant Creation
+    const { data: sbOrder, error: sbErr } = await supabase.from('orders').insert({
+      total_amount: totalAmount,
+      customer_details: customerDetails,
+      items,
+      order_status: 'Accepted'
+    }).select().single();
+
+    if (sbErr) {
+      console.error('Supabase Hub Reject:', sbErr.message);
+      return res.status(500).json({ error: 'Supabase Registry Failed' });
+    }
+
+    // 2. Razorpay Initialization (Service Bridge)
     let rzpOrder = null;
-    const hasRealKeys = process.env.RAZORPAY_KEY_ID && 
-                        !process.env.RAZORPAY_KEY_ID.includes('fallback') && 
-                        !process.env.RAZORPAY_KEY_ID.includes('test_onoff');
+    const hasRealKeys = process.env.RAZORPAY_KEY_ID && !process.env.RAZORPAY_KEY_ID.includes('fallback');
     
     if (hasRealKeys) {
       try {
         rzpOrder = await razorpay.orders.create({
-          amount: totalAmount * 100,
-          currency: 'INR',
-          receipt: newOrder._id.toString()
+          amount: totalAmount * 100, currency: 'INR', receipt: sbOrder.id
         });
-        newOrder.paymentDetails.razorpayOrderId = rzpOrder.id;
-        await newOrder.save();
+        await supabase.from('orders').update({ shipping_details: { rzpOrderId: rzpOrder.id } }).eq('id', sbOrder.id);
       } catch (rzpErr) {
-        console.warn('⚠️ Razorpay skipped:', rzpErr.message);
+        console.warn('⚠️ Razorpay deferred:', rzpErr.message);
       }
-    } else {
-      newOrder.paymentDetails.status = 'Completed';
-      await newOrder.save();
     }
 
-    // 3. BACKGROUND SIGNAL HUB: Trigger stock and email non-blocking
+    // 3. Background Signal: Stock & Email
     setImmediate(async () => {
-       try {
-          // A. Stock Adjustment
-          for (const item of items) {
-             const product = await mongoose.model('Product').findById(item.product);
-             if (product && product.stock > 0) {
-                product.stock = Math.max(0, product.stock - (item.quantity || 1));
-                await product.save();
-             }
-          }
-          // B. Email Confirmation
-          sendOrderConfirmation(newOrder);
-       } catch (bgErr) {
-          console.error('[ATELIER BACKGROUND ERROR]', bgErr.message);
-       }
+      // Stock Adjustment in Supabase
+      for (const item of items) {
+        const { data: prod } = await supabase.from('products').select('stock').eq('id', item.product).single();
+        if (prod && prod.stock > 0) {
+          await supabase.from('products').update({ stock: Math.max(0, prod.stock - (item.quantity || 1)) }).eq('id', item.product);
+        }
+      }
+      sendOrderConfirmation(sbOrder);
     });
 
-    // 4. 🚀 SUPABASE HUB SYNC: Instant Feed Registry
-    const { data: sbOrder, error: sbErr } = await supabase.from('orders').insert({
-      total_amount: totalAmount,
-      customer_details: customerDetails,
-      items: items.map(i => ({ ...i, image: i.image || '' })), // Keep full detail for history
-      order_status: 'Accepted' // Automatically accept for new hub efficiency
-    }).select().single();
-
-    if (sbErr) console.warn('⚠️ Supabase sync deferred:', sbErr.message);
-
-    res.json({ 
-      success: true, 
-      dbOrderId: newOrder._id, 
-      supabaseId: sbOrder?.id,
-      razorpayOrder: rzpOrder 
-    });
+    res.json({ success: true, dbOrderId: sbOrder.id, razorpayOrder: rzpOrder });
   } catch (error) {
-    console.error('Order creation error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Razorpay Webhook Callback (Post-payment)
-orderRouter.post('/verify', async (req, res) => {
-  try {
-    const { razorpay_order_id, razorpay_payment_id } = req.body;
-    
-    // 💡 SECURE BYPASS: Recognize local/demo verification signals
-    if (razorpay_order_id && razorpay_order_id.startsWith('demo_')) {
-      console.log('⚡ Local/Demo Verification Signal:', razorpay_order_id);
-      return res.json({ success: true, message: 'Demo verification complete.' });
-    }
-
-    const order = await Order.findOne({ 'paymentDetails.razorpayOrderId': razorpay_order_id });
-    if (!order) {
-       console.error('❌ Order Lost During Verification:', razorpay_order_id);
-       return res.status(404).json({ error: 'Signal Lost: Order matching this ID not found.' });
-    }
-    
-    order.paymentDetails.status = 'Completed';
-    order.paymentDetails.razorpayPaymentId = razorpay_payment_id;
-    await order.save();
-
-    // 📧 Trigger Order Confirmation Email (Real-time background)
-    sendOrderConfirmation(order);
-
-    res.json({ success: true, message: 'Payment verified and order confirmed!' });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Admin: Resend Invoice via Email (Supports Sandbox Mode for Dummy IDs)
-orderRouter.post('/resend-invoice', async (req, res) => {
-  const rid = Math.random().toString(36).slice(2, 7).toUpperCase();
-  console.log(`[${rid}] ⚡ INCOMING: Resend Invoice for ${req.body.orderId}`);
-  console.time(`[${rid}] TRACE`);
-
-  try {
-    const { orderId, overrideEmail } = req.body;
-    let order;
-    const sanitizedOrderId = (orderId || '').toString().trim().replace(/^#/, '');
-
-    console.time(`[${rid}] MD_FIND`);
-    if (!mongoose.Types.ObjectId.isValid(sanitizedOrderId)) {
-       console.log(`[${rid}] Sandbox Mode Detected`);
-       order = {
-         _id: sanitizedOrderId || 'sandbox-'+Date.now(),
-         createdAt: new Date(),
-         totalAmount: 9999, 
-         customerDetails: {
-           name: 'Sandbox Tester',
-           email: overrideEmail || 'vivek@example.com',
-           phone: '0000000000',
-           address: 'LIVE TEST LOCATION, SMARTON'
-         },
-         items: [{ name: 'MOCK LUXURY ITEM', quantity: 1, price: 9999 }]
-       };
-    } else {
-       order = await Order.findById(sanitizedOrderId);
-       if (order && overrideEmail) order.customerDetails.email = overrideEmail;
-    }
-    console.timeEnd(`[${rid}] MD_FIND`);
-
-    if (!order) {
-      console.timeEnd(`[${rid}] TRACE`);
-      return res.status(404).json({ error: 'Order signal not found in database registry.' });
-    }
-
-    // 🔥 PURE FIRE-AND-FORGET
-    console.log(`[${rid}] Queuing email background task...`);
-    sendOrderConfirmation(order); // Non-blocking
-    
-    console.timeEnd(`[${rid}] TRACE`);
-    return res.json({ 
-      success: true, 
-      message: `Atelier Hub: Digital Invoice queued for ${overrideEmail || order.customerDetails?.email}`,
-      traceId: rid 
-    });
-  } catch (err) {
-    console.timeEnd(`[${rid}] TRACE`);
-    console.error(`[${rid}] Hub Exception:`, err.message);
-    res.status(500).json({ success: false, error: 'Hub transmission failure: ' + err.message });
-  }
-});
-
-// Admin: Get all orders
-// Admin: Update Status & Logistics
-orderRouter.put('/:id/status', async (req, res) => {
-  try {
-    const { status, courier, trackingId } = req.body;
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: 'Signal Lost: Order Not Found' });
-
-    if (status) order.orderStatus = status;
-    if (courier) {
-      if (!order.shippingDetails) order.shippingDetails = {};
-      order.shippingDetails.courier = courier;
-    }
-    if (trackingId) {
-      if (!order.shippingDetails) order.shippingDetails = {};
-      order.shippingDetails.trackingId = trackingId;
-    }
-
-    await order.save();
-
-    // 🚀 SUPABASE SYNC: High-Speed Update
-    await supabase.from('orders')
-      .update({ 
-         order_status: status, 
-         shipping_details: { courier, trackingId } 
-      })
-      .filter('customer_details->>email', 'eq', order.customerDetails?.email)
-      .filter('total_amount', 'eq', order.totalAmount);
-
-    res.json({ success: true, message: `Order Protocol Updated: ${status}` });
-  } catch (error) {
-    res.status(500).json({ error: 'Backend Transmission Failed' });
-  }
-});
-
-// Admin: Toggle Archive Signal
-orderRouter.put('/:id/archive', async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: 'Order Signal Missing' });
-    order.isArchived = !order.isArchived;
-    await order.save();
-    res.json({ success: true, isArchived: order.isArchived });
-  } catch (error) {
-    res.status(500).json({ error: 'Archive Logic Failure' });
-  }
-});
-
-// Admin: Get all orders
 orderRouter.get('/admin/all', async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
+    const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    res.json(data);
+  } catch (error) { res.status(500).json({ error: 'Atelier Feed Blocked' }); }
+});
+
+orderRouter.put('/:orderId/status', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, courier, trackingId } = req.body;
+    
+    const { error } = await supabase.from('orders').update({ 
+      order_status: status, 
+      shipping_details: { courier, trackingId } 
+    }).eq('id', orderId);
+
+    if (error) throw error;
+    res.json({ success: true, message: 'Registry Protocol Updated' });
+  } catch (error) { res.status(500).json({ error: 'Atelier Feed Blocked' }); }
 });
 
 app.use('/api/orders', orderRouter);
 
-// 5. Start Server
+// 🛠️ Hub Mount: Legacy Routing Removal
+// For now, I'll redirect Product/Auth routes to Supabase logic directly here or rewrite routes files.
+// Let's rewrite the Routes files in a moment.
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 ONOFF Backend Server running on port ${PORT} (Global Hub Open)`));
-
-
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 ATELIER HUB LIVE ON PORT ${PORT} (SUPABASE CORE)`);
+});

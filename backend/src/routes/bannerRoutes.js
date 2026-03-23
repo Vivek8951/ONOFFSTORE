@@ -1,44 +1,46 @@
 const express = require('express');
-const Banner = require('../models/Banner');
+const supabase = require('../config/supabase');
 const router = express.Router();
 
-// Get all banners
+// Get active banners
 router.get('/', async (req, res) => {
   try {
-    const banners = await Banner.find({ active: true }).sort({ createdAt: -1 });
-    res.json(banners);
+    const { data, error } = await supabase.from('banners').select('*').eq('active', true).order('id', { ascending: false });
+    if (error) throw error;
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
+    res.status(500).json({ error: 'Supabase Feed Error' });
   }
 });
 
-// Admin: Get all banners (including inactive)
+// Admin: Get all banners
 router.get('/admin/all', async (req, res) => {
   try {
-    const banners = await Banner.find().sort({ createdAt: -1 });
-    res.json(banners);
+    const { data, error } = await supabase.from('banners').select('*').order('id', { ascending: false });
+    if (error) throw error;
+    res.json(data);
   } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
+    res.status(500).json({ error: 'Supabase Feed Error' });
   }
 });
 
 // Admin: Add a new banner
 router.post('/', async (req, res) => {
   try {
-    const newBanner = new Banner(req.body);
-    const savedBanner = await newBanner.save();
-    res.status(201).json(savedBanner);
+    const { data, error } = await supabase.from('banners').insert(req.body).select().single();
+    if (error) throw error;
+    res.status(201).json(data);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
 
-// Admin: Update Banner (New)
+// Admin: Update Banner
 router.put('/:id', async (req, res) => {
   try {
-    const updatedBanner = await Banner.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updatedBanner) return res.status(404).json({ error: 'Banner not found' });
-    res.json(updatedBanner);
+    const { data, error } = await supabase.from('banners').update(req.body).eq('id', req.params.id).select().single();
+    if (error) throw error;
+    res.json(data);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -47,7 +49,8 @@ router.put('/:id', async (req, res) => {
 // Admin: Delete a banner
 router.delete('/:id', async (req, res) => {
   try {
-    await Banner.findByIdAndDelete(req.params.id);
+    const { error } = await supabase.from('banners').delete().eq('id', req.params.id);
+    if (error) throw error;
     res.json({ success: true, message: 'Banner Deleted' });
   } catch (error) {
     res.status(400).json({ error: error.message });

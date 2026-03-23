@@ -1,60 +1,64 @@
 const express = require('express');
 const router = express.Router();
-const OTP = require('../models/OTP');
-const User = require('../models/User');
+const supabase = require('../config/supabase');
 
-// SIMULATE SEND OTP
+// SEND OTP (Instant Hub Protocol)
 router.post('/send-otp', async (req, res) => {
-  const { phone } = req.body;
-  if (!phone) return res.status(400).json({ message: 'Phone number required' });
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ message: 'Phone number required' });
 
-  // Generate a random 6-digit OTP
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60000).toISOString();
 
-  // Save/Update OTP in DB
-  await OTP.findOneAndUpdate(
-    { phone },
-    { code, expiresAt: new Date(Date.now() + 5 * 60000) }, // 5 mins from now
-    { upsert: true }
-  );
+    // Upsert into Supabase OTPs
+    const { data: existing } = await supabase.from('otps').select('id').eq('phone', phone).single();
+    if (existing) {
+       await supabase.from('otps').update({ code, expires_at: expiresAt }).eq('phone', phone);
+    } else {
+       await supabase.from('otps').insert({ phone, code, expires_at: expiresAt });
+    }
 
-  // MOCK: In a real app, use Twilio or SMS Gupshup here
-  // For the user to see the code, I'll log it to console and send it back also (for demo)
-  console.log(`[AUTH-MOCK] OTP for ${phone} is ${code}`);
-
-  res.status(200).json({ message: 'OTP sent successfully', mockOTP: code });
+    console.log(`[AUTH-HUB-MOCK] OTP for ${phone} is ${code}`);
+    res.status(200).json({ message: 'OTP sent successfully', mockOTP: code });
+  } catch (error) {
+    res.status(500).json({ error: 'Supabase Auth Blocked' });
+  }
 });
 
-// VERIFY OTP
+// VERIFY OTP (Instant Hub Verification)
 router.post('/verify-otp', async (req, res) => {
-  const { phone, code } = req.body;
-  if (!phone || !code) return res.status(400).json({ message: 'Phone and code required' });
+  try {
+    const { phone, code } = req.body;
+    if (!phone || !code) return res.status(400).json({ message: 'Phone and code required' });
 
-  const otpRecord = await OTP.findOne({ phone, code });
+    const { data: otpRecord, error } = await supabase.from('otps').select('*').eq('phone', phone).eq('code', code).single();
+    if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
+       return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
 
-  if (!otpRecord) {
-    return res.status(400).json({ message: 'Invalid or expired OTP' });
+    // Find or create user in Supabase
+    let { data: user } = await supabase.from('users').select('*').eq('phone', phone).single();
+    if (!user) {
+       const { data: newUser } = await supabase.from('users').insert({ phone }).select().single();
+       user = newUser;
+    }
+
+    // Delete used OTP
+    await supabase.from('otps').delete().eq('phone', phone).eq('code', code);
+
+    res.status(200).json({ 
+      message: 'Login successful', 
+      user: { 
+        id: user.id, 
+        phone: user.phone, 
+        name: user.name || 'Atelier Member' 
+      },
+      token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9' // Hardcoded mock token for now
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Verification Hub Failure' });
   }
-
-  // Find or create user
-  let user = await User.findOne({ phone });
-  if (!user) {
-    user = await User.create({ phone });
-  }
-
-  // Delete used OTP
-  await OTP.deleteOne({ phone, code });
-
-  // MOCK AUTH: In production, return a JWT (Token)
-  res.status(200).json({ 
-    message: 'Login successful', 
-    user: { 
-      id: user._id, 
-      phone: user.phone, 
-      name: user.name 
-    },
-    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9' // Hardcoded mock token for now
-  });
 });
 
 module.exports = router;
